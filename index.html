@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <script>
+      (function() {
+        try {
+          var origFetch = (typeof window !== 'undefined' && window.fetch) ? window.fetch.bind(window) : null;
+          var customFetch = origFetch;
+
+          function defineFetchProperty(target) {
+            if (!target) return;
+            try {
+              Object.defineProperty(target, 'fetch', {
+                get: function() {
+                  return customFetch;
+                },
+                set: function(val) {
+                  customFetch = val;
+                },
+                configurable: true,
+                enumerable: true
+              });
+            } catch (err) {}
+          }
+
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            defineFetchProperty(Window.prototype);
+          }
+          if (typeof window !== 'undefined') {
+            defineFetchProperty(window);
+          }
+          if (typeof globalThis !== 'undefined') {
+            defineFetchProperty(globalThis);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>לוח גאנט – חטיבת הביניים ב׳ אבו סנאן</title>
+    <meta name="description" content="לוח גאנט בית ספרי – חטיבת הביניים ב׳ אבו סנאן (סמל מוסד: 640615)" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  </head>
+  <body class="font-sans bg-slate-50 text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

@@ -1,0 +1,8 @@
+{
+  "name": "לוח גאנט – חטיבת הביניים ב׳ אבו סנאן",
+  "description": "מערכת אינטראקטיבית לניהול לוח גאנט בית ספרי בתצוגת לוח שנה חודשית, עם מצב צפייה ועריכה בסיסמה, אירועים רב-יומיים רציפים, ושמירה/הדפסה ב-A3.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
