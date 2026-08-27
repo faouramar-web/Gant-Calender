@@ -7,6 +7,7 @@ import { ViewEventModal } from "./components/ViewEventModal";
 import { PasswordModal } from "./components/PasswordModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { A3ExportModal } from "./components/A3ExportModal";
+import { SearchEventsModal } from "./components/SearchEventsModal";
 import { CalendarEvent } from "./types";
 import { buildMonthWeeks, HEBREW_MONTH_NAMES } from "./utils/dateUtils";
 import {
@@ -38,6 +39,7 @@ export default function App() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isA3ExportModalOpen, setIsA3ExportModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   // Selected item states
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -221,6 +223,7 @@ export default function App() {
           setIsEventModalOpen(true);
         }}
         onOpenA3ExportModal={() => setIsA3ExportModalOpen(true)}
+        onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
       />
@@ -287,33 +290,48 @@ export default function App() {
               </div>
             </div>
 
-            {/* Quick Legend / Footer Tips */}
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs no-print">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="font-bold text-slate-700 flex items-center gap-1">
-                  <BookOpen className="w-3.5 h-3.5 text-[#0EA5E9]" />
-                  מקרא תצוגה:
-                </span>
-                <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-full text-slate-700 font-semibold">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#0EA5E9]" />
-                  היום הנוכחי
-                </span>
-                <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-full text-slate-700 font-semibold">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-                  ימי שישי ושבת
-                </span>
-                <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-full text-slate-700 font-semibold">
-                  <span className="w-5 h-2 rounded-full bg-indigo-500" />
-                  אירוע רב-יומי כרצועה רציפה
-                </span>
+            {/* Quick Legend / Footer Tips with Copyright */}
+            <div className="mt-6 flex flex-col items-center gap-3.5 text-xs text-slate-500 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs no-print">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-3 w-full">
+                {/* Legend items */}
+                <div className="flex items-center gap-2.5 flex-wrap justify-center lg:justify-start">
+                  <span className="font-bold text-slate-700 flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5 text-[#0EA5E9]" />
+                    מקרא תצוגה:
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-full text-slate-700 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#0EA5E9]" />
+                    היום הנוכחי
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-full text-slate-700 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                    ימי שישי וראשון
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-full text-slate-700 font-semibold">
+                    <span className="w-5 h-2 rounded-full bg-indigo-500" />
+                    אירוע רב-יומי כרצועה רציפה
+                  </span>
+                </div>
+
+                {/* Instructions / Tips */}
+                <div className="flex items-center gap-1 font-semibold text-slate-600">
+                  {isEditMode ? (
+                    <span>לחץ על תאריך בלוח או על אירוע לעריכה</span>
+                  ) : (
+                    <span>לחץ על כל אירוע לצפייה בפרטים והערות</span>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-1 font-semibold text-slate-600">
-                {isEditMode ? (
-                  <span>לחץ על תאריך בלוח או על אירוע לעריכה</span>
-                ) : (
-                  <span>לחץ על כל אירוע לצפייה בפרטים והערות</span>
-                )}
+              {/* Divider & Centered Copyright */}
+              <div className="w-full border-t border-slate-100 pt-3 flex flex-col sm:flex-row items-center justify-center gap-2 text-center text-slate-500">
+                <span className="font-medium">
+                  כל הזכויות שמורות לעמאר פאעור © {new Date().getFullYear()}
+                </span>
+                <span className="hidden sm:inline text-slate-300">•</span>
+                <span className="font-medium tracking-wide text-slate-600" dir="ltr">
+                  All rights reserved to Amar Faour © {new Date().getFullYear()}
+                </span>
               </div>
             </div>
           </div>
@@ -380,6 +398,25 @@ export default function App() {
         currentDate={currentDate}
         weeks={weeks}
         events={events}
+      />
+
+      {/* Search Events Modal */}
+      <SearchEventsModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        events={events}
+        onSelectEvent={(event) => {
+          setSelectedEvent(event);
+          setIsViewModalOpen(true);
+        }}
+        onNavigateToDate={(date) => {
+          setCurrentDate(date);
+        }}
+        isEditMode={isEditMode}
+        onEditEvent={(event) => {
+          setSelectedEvent(event);
+          setIsEventModalOpen(true);
+        }}
       />
     </div>
   );

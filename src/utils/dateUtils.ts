@@ -75,7 +75,7 @@ export function buildMonthWeeks(year: number, month: number, events: CalendarEve
       dayOfWeek: date.getDay(),
       isCurrentMonth: false,
       isToday: isTodayDate(dateString),
-      isWeekend: date.getDay() === 5 || date.getDay() === 6
+      isWeekend: date.getDay() === 0 || date.getDay() === 5 // Sunday & Friday (non-teaching days)
     });
   }
 
@@ -90,7 +90,7 @@ export function buildMonthWeeks(year: number, month: number, events: CalendarEve
       dayOfWeek: date.getDay(),
       isCurrentMonth: true,
       isToday: isTodayDate(dateString),
-      isWeekend: date.getDay() === 5 || date.getDay() === 6
+      isWeekend: date.getDay() === 0 || date.getDay() === 5 // Sunday & Friday (non-teaching days)
     });
   }
 
@@ -106,7 +106,7 @@ export function buildMonthWeeks(year: number, month: number, events: CalendarEve
       dayOfWeek: date.getDay(),
       isCurrentMonth: false,
       isToday: isTodayDate(dateString),
-      isWeekend: date.getDay() === 5 || date.getDay() === 6
+      isWeekend: date.getDay() === 0 || date.getDay() === 5 // Sunday & Friday (non-teaching days)
     });
   }
 

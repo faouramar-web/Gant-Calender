@@ -190,17 +190,20 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
             {/* Print Grid */}
             <div className="border-2 border-slate-800 rounded-lg overflow-hidden">
               {/* Weekday header */}
-              <div className="grid grid-cols-7 border-b-2 border-slate-800 bg-slate-200 text-slate-900 font-bold text-sm divide-x divide-x-reverse divide-slate-800">
-                {HEBREW_WEEKDAY_NAMES.map((name, i) => (
-                  <div
-                    key={name}
-                    className={`py-2 text-center ${
-                      i === 5 || i === 6 ? "bg-slate-300" : ""
-                    }`}
-                  >
-                    {name}
-                  </div>
-                ))}
+              <div className="grid grid-cols-7 border-b-2 border-sky-800 bg-sky-700 text-white font-bold text-sm divide-x divide-x-reverse divide-sky-600/60">
+                {HEBREW_WEEKDAY_NAMES.map((name, i) => {
+                  const isOffDay = i === 0 || i === 5; // Sunday & Friday
+                  return (
+                    <div
+                      key={name}
+                      className={`py-2.5 text-center text-white font-bold tracking-wide ${
+                        isOffDay ? "bg-[#4f46e5]" : "bg-[#2563eb]"
+                      }`}
+                    >
+                      {name}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Weeks */}
@@ -226,13 +229,13 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                                 : "bg-white"
                             }`}
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-start justify-start w-full">
                               <span
                                 className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                                   day.isToday
                                     ? "bg-blue-700 text-white"
                                     : day.isCurrentMonth
-                                    ? "text-slate-900"
+                                    ? "text-slate-900 font-extrabold"
                                     : "text-slate-400"
                                 }`}
                               >
@@ -299,6 +302,9 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
             {/* Print Footer */}
             <div className="mt-4 pt-3 border-t border-slate-300 flex items-center justify-between text-xs text-slate-500 font-medium">
               <span>חטיבת הביניים ב׳ אבו סנאן • משרד החינוך • מחוז צפון</span>
+              <span className="text-center font-semibold text-slate-600">
+                כל הזכויות שמורות לעמאר פאעור © {new Date().getFullYear()} • Amar Faour
+              </span>
               <span>הופק בתאריך: {formatIsraeliDate(new Date().toISOString().split("T")[0])}</span>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload } from "lucide-react";
+import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search } from "lucide-react";
 
 interface HeaderProps {
   isEditMode: boolean;
@@ -7,6 +7,7 @@ interface HeaderProps {
   onExitEditMode: () => void;
   onOpenAddEventModal: () => void;
   onOpenA3ExportModal: () => void;
+  onOpenSearchModal: () => void;
   onExportBackup: () => void;
   onImportBackup: (file: File) => void;
 }
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onExitEditMode,
   onOpenAddEventModal,
   onOpenA3ExportModal,
+  onOpenSearchModal,
   onExportBackup,
   onImportBackup,
 }) => {
@@ -69,23 +71,33 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center flex-wrap gap-2.5 w-full md:w-auto justify-end">
             {/* Status indicator */}
             {isEditMode ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs sm:text-sm font-bold shadow-2xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>מצב עריכה פעיל</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200/80 text-slate-600 text-xs font-semibold">
-                <Eye className="w-4 h-4 text-slate-500" />
+              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-sky-50/50 border border-blue-500 text-blue-900 text-xs sm:text-sm font-semibold shadow-2xs">
+                <Eye className="w-4 h-4 text-blue-600" />
                 <span>מצב צפייה בלבד</span>
               </div>
             )}
+
+            {/* Search Events Button - Styled consistently with blue border */}
+            <button
+              onClick={onOpenSearchModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-sky-50 text-blue-900 border border-blue-500 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+              title="חיפוש אירועים בלוח גאנט"
+            >
+              <Search className="w-4 h-4 text-blue-600" />
+              <span>חיפוש אירועים</span>
+            </button>
 
             {/* Backup Export & Import Buttons (Visible ONLY in Edit Mode) */}
             {isEditMode && (
               <>
                 <button
                   onClick={onExportBackup}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-sky-50 text-sky-800 border border-blue-500 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
                   title="הורדת קובץ גיבוי JSON עם כל האירועים"
                 >
                   <Download className="w-4 h-4 text-sky-600" />
@@ -94,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-blue-500 text-xs sm:text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
                   title="שחזור אירועים מקובץ גיבוי JSON"
                 >
                   <Upload className="w-4 h-4 text-slate-600" />
@@ -106,10 +118,10 @@ export const Header: React.FC<HeaderProps> = ({
             {/* A3 Print / Export Button */}
             <button
               onClick={onOpenA3ExportModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-100 hover:bg-slate-200/90 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold transition-all shadow-2xs active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-sky-50 text-blue-900 border border-blue-500 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
               title="שמירת החודש ב-PDF והדפסה A3 לרוחב"
             >
-              <Printer className="w-4 h-4 text-slate-600" />
+              <Printer className="w-4 h-4 text-blue-600" />
               <span>שמירה והדפסה A3</span>
             </button>
 
@@ -128,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
             {isEditMode ? (
               <button
                 onClick={onExitEditMode}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-slate-50 text-slate-700 border border-blue-500 text-xs sm:text-sm font-semibold transition-all shadow-2xs cursor-pointer active:scale-95"
               >
                 <Unlock className="w-4 h-4 text-slate-600" />
                 <span>יציאה ממצב עריכה</span>
@@ -136,7 +148,7 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button
                 onClick={onOpenPasswordModal}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-blue-500 text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer active:scale-95"
               >
                 <Lock className="w-4 h-4 text-amber-600" />
                 <span>כניסה למצב עריכה</span>

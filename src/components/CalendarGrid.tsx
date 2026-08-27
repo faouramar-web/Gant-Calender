@@ -17,26 +17,30 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   onSelectEvent,
 }) => {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden calendar-print-wrapper">
+    <div className="bg-white rounded-2xl border border-slate-300 shadow-md overflow-hidden calendar-print-wrapper">
       {/* Weekday Header Row (RTL: ראשון on right, שבת on left) */}
-      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold divide-x divide-x-reverse divide-slate-200">
+      <div className="grid grid-cols-7 border-b border-slate-300 bg-sky-700 text-white text-xs sm:text-sm font-bold divide-x divide-x-reverse divide-sky-600/50 shadow-xs">
         {HEBREW_WEEKDAY_NAMES.map((name, index) => {
-          const isWeekendHeader = index === 5 || index === 6; // Friday / Saturday
+          const isOffDay = index === 0 || index === 5; // Sunday (ראשון) & Friday (שישי) - ימים שלא מלמדים בהם
           return (
             <div
               key={name}
-              className={`py-3 px-2 text-center select-none ${
-                isWeekendHeader ? "bg-slate-100/80 text-slate-800 font-bold" : ""
+              className={`py-3 px-2 text-center select-none transition-colors ${
+                isOffDay
+                  ? "bg-[#4f46e5] text-white font-extrabold" // אינדיגו/סגול-כחול מואר וברור לימי שישי וראשון
+                  : "bg-[#2563eb] text-white font-bold" // כחול מלכותי בהיר ונקי לשאר הימים
               }`}
             >
-              <span>{name}</span>
+              <span className="text-white text-xs sm:text-sm font-bold tracking-wide drop-shadow-xs">
+                {name}
+              </span>
             </div>
           );
         })}
       </div>
 
       {/* Week Rows */}
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-slate-300">
         {weeks.map((week, weekIndex) => {
           // Calculate track height based on number of overlapping event slots with generous line spacing
           const minHeight = Math.max(136, 64 + week.maxSlots * 38);
@@ -48,7 +52,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               style={{ minHeight: `${minHeight}px` }}
             >
               {/* Day Cells Grid (Background & Numbers) */}
-              <div className="grid grid-cols-7 divide-x divide-x-reverse divide-slate-100 absolute inset-0">
+              <div className="grid grid-cols-7 divide-x divide-x-reverse divide-slate-300 absolute inset-0">
                 {week.days.map((day) => {
                   const isCurrent = day.isCurrentMonth;
                   const isToday = day.isToday;
@@ -72,15 +76,15 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                         isEditMode ? "hover:bg-sky-50/40 cursor-pointer group" : ""
                       }`}
                     >
-                      {/* Day Number Header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
+                      {/* Day Number Header - Positioned firmly in the top-right corner (RTL) */}
+                      <div className="flex items-start justify-between w-full">
+                        <div className="flex items-center gap-1.5 self-start">
                           <div
                             className={`w-7 h-7 flex items-center justify-center text-xs sm:text-sm font-bold rounded-full transition-all ${
                               isToday
                                 ? "bg-[#0EA5E9] text-white shadow-xs ring-2 ring-sky-200"
                                 : isCurrent
-                                ? "text-slate-700 hover:bg-slate-100"
+                                ? "text-slate-800 hover:bg-slate-100 font-extrabold"
                                 : "text-slate-400"
                             }`}
                           >
@@ -88,15 +92,15 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                           </div>
 
                           {isToday && (
-                            <span className="inline-flex items-center text-[10.5px] font-bold text-sky-700 bg-sky-100/90 border border-sky-200/90 px-1.5 py-0.5 rounded-full shadow-2xs no-print">
+                            <span className="inline-flex items-center text-[10px] font-bold text-sky-700 bg-sky-100/90 border border-sky-200/90 px-1.5 py-0.5 rounded-full shadow-2xs no-print">
                               היום
                             </span>
                           )}
                         </div>
 
-                        {/* Plus icon on hover in edit mode */}
+                        {/* Plus icon on hover in edit mode (placed on the left side in RTL) */}
                         {isEditMode && (
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity no-print">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity no-print self-start">
                             <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 shadow-2xs">
                               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                             </span>
@@ -153,7 +157,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                               backgroundColor: event.color,
                               color: event.textColor || "#ffffff",
                             }}
-                            className={`h-8 px-3 flex items-center justify-between shadow-2xs cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all overflow-hidden ${roundedClasses}`}
+                            className={`h-8 px-3 flex items-center justify-between shadow-2xs cursor-pointer relative transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:brightness-90 active:translate-y-0 active:scale-[0.99] hover:z-10 overflow-hidden ${roundedClasses}`}
                             title={`${event.title} (${formatIsraeliDate(event.startDate)} - ${formatIsraeliDate(event.endDate)})${
                               event.note ? `\nהערה: ${event.note}` : ""
                             }`}
