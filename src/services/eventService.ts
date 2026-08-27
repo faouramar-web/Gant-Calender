@@ -165,7 +165,7 @@ export async function updateEvent(id: string, eventData: Omit<CalendarEvent, "id
 }
 
 export async function deleteEvent(id: string, password: string): Promise<void> {
-  if (password !== "1605") {
+  if (password !== "160525") {
     throw new Error("סיסמה שגויה. לא ניתן למחוק אירוע.");
   }
 

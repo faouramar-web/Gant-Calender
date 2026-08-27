@@ -33,7 +33,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
   const handleVerifyPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "1605") {
+    if (password === "160525") {
       setIsPasswordVerified(true);
       setError(null);
     } else {
@@ -45,7 +45,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   const handleFinalDelete = async () => {
     try {
       setIsDeleting(true);
-      await onConfirmDelete("1605");
+      await onConfirmDelete("160525");
       setIsDeleting(false);
       onClose();
     } catch (err: any) {

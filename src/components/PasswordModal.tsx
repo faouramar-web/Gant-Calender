@@ -26,7 +26,7 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "1605") {
+    if (password === "160525") {
       setError(null);
       onSuccess();
       onClose();

@@ -130,7 +130,7 @@ async function startServer() {
       const { id } = req.params;
       const { password } = req.body;
 
-      if (password !== "1605") {
+      if (password !== "160525") {
         return res.status(401).json({ success: false, error: "הסיסמה שגויה" });
       }
 
