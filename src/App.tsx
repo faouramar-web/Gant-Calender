@@ -16,7 +16,10 @@ import {
   updateEvent,
   deleteEvent,
 } from "./services/eventService";
-import { CheckCircle2, AlertCircle, RefreshCw, Sparkles, BookOpen } from "lucide-react";
+import { CheckCircle2, AlertCircle, RefreshCw, Sparkles, BookOpen, Clock } from "lucide-react";
+
+// Auto lock timeout: 5 minutes (in milliseconds)
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function App() {
   // State
@@ -46,14 +49,63 @@ export default function App() {
   const [defaultDateForNewEvent, setDefaultDateForNewEvent] = useState<string | undefined>(undefined);
 
   // Toast / Notification State
-  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "warning" } | null>(null);
 
-  const showToast = (text: string, type: "success" | "error" = "success") => {
+  const showToast = (text: string, type: "success" | "error" | "warning" = "success") => {
     setToastMessage({ text, type });
     setTimeout(() => {
       setToastMessage(null);
-    }, 4000);
+    }, 4500);
   };
+
+  // Automatic Lock after 5 minutes of inactivity when in Edit Mode
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    let timeoutId: NodeJS.Timeout;
+
+    const handleTimeout = () => {
+      setIsEditMode(false);
+      // Close any open edit/delete modal
+      setIsEventModalOpen(false);
+      setIsDeleteModalOpen(false);
+      setSelectedEvent(null);
+      setDefaultDateForNewEvent(undefined);
+      showToast("מצב עריכה ננעל אוטומטית עקב 5 דקות של חוסר פעילות", "warning");
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleTimeout, INACTIVITY_TIMEOUT_MS);
+    };
+
+    // Initialize timer
+    resetTimer();
+
+    // User activity events to listen to
+    const activityEvents = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"];
+    
+    // Throttle listener to avoid high CPU usage
+    let lastActivityTime = Date.now();
+    const onUserActivity = () => {
+      const now = Date.now();
+      if (now - lastActivityTime > 1000) {
+        lastActivityTime = now;
+        resetTimer();
+      }
+    };
+
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, onUserActivity, { passive: true });
+    });
+
+    return () => {
+      clearTimeout(timeoutId);
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, onUserActivity);
+      });
+    };
+  }, [isEditMode]);
 
   // Export JSON Backup file
   const handleExportBackup = () => {
@@ -236,11 +288,15 @@ export default function App() {
             className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full shadow-xl flex items-center gap-2.5 text-sm font-bold animate-in slide-in-from-bottom-3 duration-300 no-print ${
               toastMessage.type === "success"
                 ? "bg-emerald-700 text-white border border-emerald-600 shadow-emerald-500/20"
+                : toastMessage.type === "warning"
+                ? "bg-amber-600 text-white border border-amber-500 shadow-amber-500/20"
                 : "bg-rose-700 text-white border border-rose-600 shadow-rose-500/20"
             }`}
           >
             {toastMessage.type === "success" ? (
               <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
+            ) : toastMessage.type === "warning" ? (
+              <Clock className="w-5 h-5 text-amber-200 shrink-0" />
             ) : (
               <AlertCircle className="w-5 h-5 text-rose-200 shrink-0" />
             )}
