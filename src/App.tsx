@@ -11,6 +11,7 @@ import { SearchEventsModal } from "./components/SearchEventsModal";
 import { CalendarEvent } from "./types";
 import { buildMonthWeeks, HEBREW_MONTH_NAMES } from "./utils/dateUtils";
 import {
+  subscribeToEvents,
   fetchEvents,
   createEvent,
   updateEvent,
@@ -157,7 +158,28 @@ export default function App() {
     }
   };
 
-  // Load events from persistent server store
+  // Real-time synchronization with Firebase Firestore
+  useEffect(() => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    const unsubscribe = subscribeToEvents(
+      (data) => {
+        setEvents(data);
+        setIsLoading(false);
+      },
+      (err) => {
+        console.warn("Real-time sync issue, using local/cached events:", err);
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Manual reload helper
   const loadCalendarEvents = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -171,10 +193,6 @@ export default function App() {
       setLoadError("לא ניתן לטעון את האירועים. נא לרענן את הדף.");
     }
   }, []);
-
-  useEffect(() => {
-    loadCalendarEvents();
-  }, [loadCalendarEvents]);
 
   // Compute weeks & multi-day continuous Gantt layout
   const weeks = useMemo(() => {

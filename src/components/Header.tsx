@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search } from "lucide-react";
+import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search, Cloud } from "lucide-react";
 
 interface HeaderProps {
   isEditMode: boolean;
@@ -63,6 +63,11 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
                 <span className="text-xs text-slate-300">•</span>
                 <span className="text-xs text-slate-500 font-medium">שנת הלימודים תשפ״ז</span>
+                <span className="text-xs text-slate-300 hidden sm:inline">•</span>
+                <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full" title="הנתונים מסונכרנים בזמן אמת לכל המורים דרך Google Firebase">
+                  <Cloud className="w-3.5 h-3.5 text-emerald-600" />
+                  סנכרון ענן בזמן אמת
+                </span>
               </div>
             </div>
           </div>

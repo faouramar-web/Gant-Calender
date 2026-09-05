@@ -1,9 +1,23 @@
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  writeBatch,
+  query,
+  orderBy
+} from "firebase/firestore";
+import { db } from "../firebase";
 import { CalendarEvent } from "../types";
 import { INITIAL_SCHOOL_EVENTS } from "../data/defaultEvents";
 
 const STORAGE_KEY = "school_gantt_events_v1";
+const EVENTS_COLLECTION = "events";
 
-function getLocalEvents(): CalendarEvent[] {
+// Read from LocalStorage cache
+export function getLocalEvents(): CalendarEvent[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -15,12 +29,11 @@ function getLocalEvents(): CalendarEvent[] {
   } catch (e) {
     console.warn("Could not read localStorage events:", e);
   }
-  // Initialize with default events
-  saveLocalEvents(INITIAL_SCHOOL_EVENTS);
   return INITIAL_SCHOOL_EVENTS;
 }
 
-function saveLocalEvents(events: CalendarEvent[]) {
+// Save to LocalStorage cache
+export function saveLocalEvents(events: CalendarEvent[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   } catch (e) {
@@ -28,70 +41,136 @@ function saveLocalEvents(events: CalendarEvent[]) {
   }
 }
 
-export async function fetchEvents(): Promise<CalendarEvent[]> {
+// Seed initial school events to Firestore if collection is empty
+let isSeeding = false;
+export async function seedInitialEventsToFirestore(): Promise<void> {
+  if (isSeeding) return;
+  isSeeding = true;
   try {
-    // Try to fetch from server with a short timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const res = await fetch("/api/events", { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        if (data.events && Array.isArray(data.events)) {
-          // If server events exist, also update local cache
-          if (data.events.length > 0) {
-            saveLocalEvents(data.events);
-            return data.events;
-          }
-        }
+    const eventsRef = collection(db, EVENTS_COLLECTION);
+    const snapshot = await getDocs(eventsRef);
+    if (snapshot.empty) {
+      console.log("Firestore events collection is empty. Seeding initial school calendar...");
+      // Firestore batch limit is 500 operations
+      const batch = writeBatch(db);
+      for (const event of INITIAL_SCHOOL_EVENTS) {
+        const docRef = doc(db, EVENTS_COLLECTION, event.id);
+        batch.set(docRef, event);
       }
+      await batch.commit();
+      console.log("Firestore successfully seeded with school events!");
     }
   } catch (err) {
-    // Server is unreachable or running in static mode (Vercel, GitHub Pages, etc.)
-    console.info("Using local storage events fallback.");
+    console.error("Failed to seed initial events to Firestore:", err);
+  } finally {
+    isSeeding = false;
   }
-
-  // Fallback to local storage (or default events)
-  return getLocalEvents();
 }
 
-export async function createEvent(eventData: Omit<CalendarEvent, "id" | "createdAt" | "updatedAt">): Promise<CalendarEvent> {
-  // Try server first
+/**
+ * Real-time subscription to events in Firebase Firestore.
+ * Automatically synchronizes changes across all devices and teachers.
+ */
+export function subscribeToEvents(
+  onUpdate: (events: CalendarEvent[]) => void,
+  onError?: (err: any) => void
+): () => void {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const eventsRef = collection(db, EVENTS_COLLECTION);
+    const q = query(eventsRef, orderBy("startDate", "asc"));
 
-    const res = await fetch("/api/events", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(eventData),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        if (data.success && data.event) {
-          // Update local cache
-          const current = getLocalEvents();
-          saveLocalEvents([...current, data.event]);
-          return data.event;
+    const unsubscribe = onSnapshot(
+      q,
+      async (snapshot) => {
+        if (snapshot.empty) {
+          // If empty in Firestore, trigger seeding in background
+          await seedInitialEventsToFirestore();
+          // Provide local fallback in the meantime
+          onUpdate(getLocalEvents());
+          return;
         }
-      }
-    }
-  } catch (err) {
-    console.info("Saving locally (static mode).");
-  }
 
-  // Local storage creation fallback
+        const eventsList: CalendarEvent[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          eventsList.push({
+            id: docSnap.id,
+            title: data.title || "",
+            startDate: data.startDate || "",
+            endDate: data.endDate || data.startDate || "",
+            color: data.color || "#0ea5e9",
+            textColor: data.textColor || "#ffffff",
+            note: data.note || "",
+            createdAt: data.createdAt || Date.now(),
+            updatedAt: data.updatedAt || Date.now()
+          });
+        });
+
+        // Update local cache for instant offline startup
+        saveLocalEvents(eventsList);
+        onUpdate(eventsList);
+      },
+      (error) => {
+        console.error("Firestore onSnapshot error:", error);
+        // Fallback to local storage on permission or network error
+        const local = getLocalEvents();
+        onUpdate(local);
+        if (onError) onError(error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.error("Could not set up Firestore listener:", err);
+    onUpdate(getLocalEvents());
+    return () => {};
+  }
+}
+
+/**
+ * One-time fetch of events (Firestore with LocalStorage fallback)
+ */
+export async function fetchEvents(): Promise<CalendarEvent[]> {
+  try {
+    const eventsRef = collection(db, EVENTS_COLLECTION);
+    const q = query(eventsRef, orderBy("startDate", "asc"));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      await seedInitialEventsToFirestore();
+      return getLocalEvents();
+    }
+
+    const eventsList: CalendarEvent[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      eventsList.push({
+        id: docSnap.id,
+        title: data.title || "",
+        startDate: data.startDate || "",
+        endDate: data.endDate || data.startDate || "",
+        color: data.color || "#0ea5e9",
+        textColor: data.textColor || "#ffffff",
+        note: data.note || "",
+        createdAt: data.createdAt || Date.now(),
+        updatedAt: data.updatedAt || Date.now()
+      });
+    });
+
+    saveLocalEvents(eventsList);
+    return eventsList;
+  } catch (err) {
+    console.warn("Firestore fetch error, falling back to local storage:", err);
+    return getLocalEvents();
+  }
+}
+
+/**
+ * Create a new event and save to Firestore
+ */
+export async function createEvent(
+  eventData: Omit<CalendarEvent, "id" | "createdAt" | "updatedAt">
+): Promise<CalendarEvent> {
   const newEvent: CalendarEvent = {
     id: `evt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     title: eventData.title.trim(),
@@ -104,102 +183,76 @@ export async function createEvent(eventData: Omit<CalendarEvent, "id" | "created
     updatedAt: Date.now()
   };
 
-  const events = getLocalEvents();
-  events.push(newEvent);
-  saveLocalEvents(events);
+  try {
+    // Save to Firestore
+    const docRef = doc(db, EVENTS_COLLECTION, newEvent.id);
+    await setDoc(docRef, newEvent);
+  } catch (err) {
+    console.error("Firestore createEvent error, saved locally:", err);
+  }
+
+  // Update local cache
+  const local = getLocalEvents();
+  saveLocalEvents([...local, newEvent]);
+
   return newEvent;
 }
 
-export async function updateEvent(id: string, eventData: Omit<CalendarEvent, "id" | "createdAt" | "updatedAt">): Promise<CalendarEvent> {
-  // Try server first
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-    const res = await fetch(`/api/events/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(eventData),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        if (data.success && data.event) {
-          const events = getLocalEvents().map(e => e.id === id ? data.event : e);
-          saveLocalEvents(events);
-          return data.event;
-        }
-      }
-    }
-  } catch (err) {
-    console.info("Updating locally (static mode).");
-  }
-
-  // Local storage update fallback
-  const events = getLocalEvents();
-  const index = events.findIndex(e => e.id === id);
-  if (index === -1) {
-    throw new Error("האירוע לא נמצא");
-  }
-
+/**
+ * Update an existing event in Firestore
+ */
+export async function updateEvent(
+  id: string,
+  eventData: Omit<CalendarEvent, "id" | "createdAt" | "updatedAt">
+): Promise<CalendarEvent> {
   const updated: CalendarEvent = {
-    ...events[index],
+    id,
     title: eventData.title.trim(),
     startDate: eventData.startDate,
     endDate: eventData.endDate,
     color: eventData.color,
     textColor: eventData.textColor || "#ffffff",
     note: eventData.note ? eventData.note.trim() : "",
+    createdAt: Date.now(),
     updatedAt: Date.now()
   };
 
-  events[index] = updated;
-  saveLocalEvents(events);
+  try {
+    // Update in Firestore
+    const docRef = doc(db, EVENTS_COLLECTION, id);
+    await setDoc(docRef, updated, { merge: true });
+  } catch (err) {
+    console.error("Firestore updateEvent error, updated locally:", err);
+  }
+
+  // Update local cache
+  const local = getLocalEvents();
+  const index = local.findIndex((e) => e.id === id);
+  if (index !== -1) {
+    local[index] = { ...local[index], ...updated };
+    saveLocalEvents(local);
+  }
+
   return updated;
 }
 
+/**
+ * Delete an event from Firestore
+ */
 export async function deleteEvent(id: string, password: string): Promise<void> {
   if (password !== "160525") {
     throw new Error("סיסמה שגויה. לא ניתן למחוק אירוע.");
   }
 
-  // Try server first
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-    const res = await fetch(`/api/events/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ password }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        if (data.success) {
-          const events = getLocalEvents().filter(e => e.id !== id);
-          saveLocalEvents(events);
-          return;
-        }
-      }
-    }
+    // Delete from Firestore
+    const docRef = doc(db, EVENTS_COLLECTION, id);
+    await deleteDoc(docRef);
   } catch (err) {
-    console.info("Deleting locally (static mode).");
+    console.error("Firestore deleteEvent error, deleted locally:", err);
   }
 
-  // Local storage deletion fallback
-  const events = getLocalEvents().filter(e => e.id !== id);
-  saveLocalEvents(events);
+  // Remove from local cache
+  const local = getLocalEvents().filter((e) => e.id !== id);
+  saveLocalEvents(local);
 }
