@@ -6,6 +6,7 @@ export interface CalendarEvent {
   color: string;     // Hex color
   textColor?: string;
   note?: string;
+  author?: string;   // שם המורה / הרכז המזין
   createdAt?: number;
   updatedAt?: number;
 }

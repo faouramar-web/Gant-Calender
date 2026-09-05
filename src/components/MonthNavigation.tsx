@@ -8,6 +8,7 @@ interface MonthNavigationProps {
   onNextMonth: () => void;
   onToday: () => void;
   totalEventsInMonth: number;
+  hasNewEvents?: boolean;
 }
 
 export const MonthNavigation: React.FC<MonthNavigationProps> = ({
@@ -16,6 +17,7 @@ export const MonthNavigation: React.FC<MonthNavigationProps> = ({
   onNextMonth,
   onToday,
   totalEventsInMonth,
+  hasNewEvents,
 }) => {
   const monthName = HEBREW_MONTH_NAMES[currentDate.getMonth()];
   const year = currentDate.getFullYear();
@@ -38,6 +40,14 @@ export const MonthNavigation: React.FC<MonthNavigationProps> = ({
             <span>{monthName}</span>
             <span className="text-[#0EA5E9] font-bold">{year}</span>
           </h2>
+          {hasNewEvents && (
+            <div className="mt-1 flex items-center justify-center">
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs animate-pulse">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>נכנסו אירועים חדשים לחודש זה!</span>
+              </span>
+            </div>
+          )}
         </div>
 
         <button

@@ -158,7 +158,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                               color: event.textColor || "#ffffff",
                             }}
                             className={`h-8 px-3 flex items-center justify-between shadow-2xs cursor-pointer relative transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:brightness-90 active:translate-y-0 active:scale-[0.99] hover:z-10 overflow-hidden ${roundedClasses}`}
-                            title={`${event.title} (${formatIsraeliDate(event.startDate)} - ${formatIsraeliDate(event.endDate)})${
+                            title={`${event.title}${event.author ? ` | מורה מזין: ${event.author}` : ""} (${formatIsraeliDate(event.startDate)} - ${formatIsraeliDate(event.endDate)})${
                               event.note ? `\nהערה: ${event.note}` : ""
                             }`}
                           >
@@ -177,6 +177,11 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                               <span className="truncate tracking-normal font-semibold text-sm sm:text-[14px] leading-tight">
                                 {event.title}
                               </span>
+                              {event.author && (
+                                <span className="text-[12px] bg-black/20 px-1.5 py-0.5 rounded text-white/95 font-medium shrink-0">
+                                  {event.author}
+                                </span>
+                              )}
                             </div>
 
                             {/* Continuation Arrow on the Left (continues into next week) */}

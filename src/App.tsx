@@ -277,6 +277,23 @@ export default function App() {
     ).length;
   }, [currentDate, events]);
 
+  // Check if there are newly added events in this month (added recently or have teacher author)
+  const hasNewEventsInMonth = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const monthEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+    const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    return events.some(
+      (e) =>
+        e.startDate <= monthEnd &&
+        e.endDate >= monthStart &&
+        ((e.createdAt && e.createdAt > threeDaysAgo) || e.author)
+    );
+  }, [currentDate, events]);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased">
       {/* Top Application Header */}
@@ -350,6 +367,7 @@ export default function App() {
               onNextMonth={handleNextMonth}
               onToday={handleToday}
               totalEventsInMonth={totalEventsInMonth}
+              hasNewEvents={hasNewEventsInMonth}
             />
 
             {/* Responsive Calendar & Continuous Gantt Grid */}

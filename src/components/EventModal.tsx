@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Check, AlertCircle, Trash2, Palette, FileText } from "lucide-react";
+import { X, Calendar, Check, AlertCircle, Trash2, Palette, FileText, User } from "lucide-react";
 import { CalendarEvent, COLOR_OPTIONS } from "../types";
 import { formatIsraeliDate } from "../utils/dateUtils";
 
@@ -21,6 +21,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   defaultDate,
 }) => {
   const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [color, setColor] = useState(COLOR_OPTIONS[0].hex);
@@ -32,6 +33,7 @@ export const EventModal: React.FC<EventModalProps> = ({
   useEffect(() => {
     if (initialEvent) {
       setTitle(initialEvent.title);
+      setAuthor(initialEvent.author || "");
       setStartDate(initialEvent.startDate);
       setEndDate(initialEvent.endDate);
       setColor(initialEvent.color || COLOR_OPTIONS[0].hex);
@@ -39,6 +41,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     } else {
       const initDate = defaultDate || new Date().toISOString().split("T")[0];
       setTitle("");
+      setAuthor("");
       setStartDate(initDate);
       setEndDate(initDate);
       setColor(COLOR_OPTIONS[0].hex);
@@ -78,6 +81,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       setIsSaving(true);
       await onSave({
         title: title.trim(),
+        author: author.trim() || undefined,
         startDate,
         endDate,
         color,
@@ -139,6 +143,21 @@ export const EventModal: React.FC<EventModalProps> = ({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="לדוגמה: יום הורים, טיול שנתי, טקס יום הזיכרון"
               className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none text-slate-900 text-sm font-medium transition-all"
+            />
+          </div>
+
+          {/* Teacher / Author Field */}
+          <div>
+            <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+              <User className="w-4 h-4 text-sky-600" />
+              <span>שם המורה / הרכז המזין (אופציונלי)</span>
+            </label>
+            <input
+              type="text"
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              placeholder="לדוגמה: מוחמד, ראניה, רכז שכבה י'"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-slate-900 text-sm font-medium transition-all"
             />
           </div>
 
