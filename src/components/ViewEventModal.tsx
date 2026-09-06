@@ -63,18 +63,6 @@ export const ViewEventModal: React.FC<ViewEventModalProps> = ({
         <div className="px-6 py-4 space-y-4">
           {/* Dates Display */}
           <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-            {event.author && (
-              <div className="flex items-center justify-between text-xs sm:text-sm pb-2 border-b border-slate-200/60">
-                <span className="text-slate-500 font-semibold flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-sky-600" />
-                  מורה / רכז מזין:
-                </span>
-                <span className="font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
-                  {event.author}
-                </span>
-              </div>
-            )}
-
             <div className="flex items-center justify-between text-xs sm:text-sm">
               <span className="text-slate-500 font-semibold flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-blue-600" />

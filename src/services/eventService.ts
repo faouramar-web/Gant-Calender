@@ -96,6 +96,7 @@ export function subscribeToEvents(
           eventsList.push({
             id: docSnap.id,
             title: data.title || "",
+            author: data.author ? String(data.author).trim() : "",
             startDate: data.startDate || "",
             endDate: data.endDate || data.startDate || "",
             color: data.color || "#0ea5e9",
@@ -147,6 +148,7 @@ export async function fetchEvents(): Promise<CalendarEvent[]> {
       eventsList.push({
         id: docSnap.id,
         title: data.title || "",
+        author: data.author ? String(data.author).trim() : "",
         startDate: data.startDate || "",
         endDate: data.endDate || data.startDate || "",
         color: data.color || "#0ea5e9",
@@ -174,6 +176,7 @@ export async function createEvent(
   const newEvent: CalendarEvent = {
     id: `evt-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     title: eventData.title.trim(),
+    author: eventData.author ? eventData.author.trim() : "",
     startDate: eventData.startDate,
     endDate: eventData.endDate,
     color: eventData.color,
@@ -208,6 +211,7 @@ export async function updateEvent(
   const updated: CalendarEvent = {
     id,
     title: eventData.title.trim(),
+    author: eventData.author ? eventData.author.trim() : "",
     startDate: eventData.startDate,
     endDate: eventData.endDate,
     color: eventData.color,

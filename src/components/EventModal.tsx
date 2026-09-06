@@ -81,7 +81,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       setIsSaving(true);
       await onSave({
         title: title.trim(),
-        author: author.trim() || undefined,
+        author: author.trim(),
         startDate,
         endDate,
         color,

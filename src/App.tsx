@@ -141,6 +141,7 @@ export default function App() {
         if (item.title && item.startDate && item.endDate) {
           await createEvent({
             title: item.title,
+            author: item.author || "",
             startDate: item.startDate,
             endDate: item.endDate,
             color: item.color || "#0EA5E9",

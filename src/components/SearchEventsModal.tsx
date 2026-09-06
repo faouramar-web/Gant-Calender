@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Edit2,
   Sparkles,
+  User,
 } from "lucide-react";
 import { CalendarEvent } from "../types";
 import { formatIsraeliDate, parseDate, HEBREW_MONTH_NAMES } from "../utils/dateUtils";
@@ -69,6 +70,7 @@ export const SearchEventsModal: React.FC<SearchEventsModalProps> = ({
 
         const titleMatch = event.title.toLowerCase().includes(q);
         const noteMatch = (event.note || "").toLowerCase().includes(q);
+        const authorMatch = (event.author || "").toLowerCase().includes(q);
         const dateMatch =
           event.startDate.includes(q) ||
           event.endDate.includes(q) ||
@@ -81,7 +83,7 @@ export const SearchEventsModal: React.FC<SearchEventsModalProps> = ({
         const monthMatch =
           startMonthName.toLowerCase().includes(q) || endMonthName.toLowerCase().includes(q);
 
-        return titleMatch || noteMatch || dateMatch || monthMatch;
+        return titleMatch || noteMatch || authorMatch || dateMatch || monthMatch;
       })
       .sort((a, b) => a.startDate.localeCompare(b.startDate));
   }, [events, searchQuery, filterType]);
