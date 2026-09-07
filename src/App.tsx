@@ -7,6 +7,7 @@ import { ViewEventModal } from "./components/ViewEventModal";
 import { PasswordModal } from "./components/PasswordModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { A3ExportModal } from "./components/A3ExportModal";
+import { A4ExportModal } from "./components/A4ExportModal";
 import { SearchEventsModal } from "./components/SearchEventsModal";
 import { CalendarEvent } from "./types";
 import { buildMonthWeeks, HEBREW_MONTH_NAMES } from "./utils/dateUtils";
@@ -42,6 +43,7 @@ export default function App() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isA4ExportModalOpen, setIsA4ExportModalOpen] = useState(false);
   const [isA3ExportModalOpen, setIsA3ExportModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
@@ -310,6 +312,7 @@ export default function App() {
           setDefaultDateForNewEvent(undefined);
           setIsEventModalOpen(true);
         }}
+        onOpenA4ExportModal={() => setIsA4ExportModalOpen(true)}
         onOpenA3ExportModal={() => setIsA3ExportModalOpen(true)}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onExportBackup={handleExportBackup}
@@ -482,6 +485,15 @@ export default function App() {
         }}
         event={selectedEvent}
         onConfirmDelete={handleDeleteEvent}
+      />
+
+      {/* A4 Print & PDF Export Modal */}
+      <A4ExportModal
+        isOpen={isA4ExportModalOpen}
+        onClose={() => setIsA4ExportModalOpen(false)}
+        currentDate={currentDate}
+        weeks={weeks}
+        events={events}
       />
 
       {/* A3 Print & PDF Export Modal */}

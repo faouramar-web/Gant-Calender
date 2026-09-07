@@ -6,6 +6,7 @@ interface HeaderProps {
   onOpenPasswordModal: () => void;
   onExitEditMode: () => void;
   onOpenAddEventModal: () => void;
+  onOpenA4ExportModal: () => void;
   onOpenA3ExportModal: () => void;
   onOpenSearchModal: () => void;
   onExportBackup: () => void;
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenPasswordModal,
   onExitEditMode,
   onOpenAddEventModal,
+  onOpenA4ExportModal,
   onOpenA3ExportModal,
   onOpenSearchModal,
   onExportBackup,
@@ -120,11 +122,21 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
 
+            {/* A4 Print / Export Button */}
+            <button
+              onClick={onOpenA4ExportModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-sky-50 text-blue-900 border border-blue-500 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+              title="שמירה והדפסה A4 (מדפסת רגילה - לרוחב או לאורך)"
+            >
+              <Printer className="w-4 h-4 text-sky-600" />
+              <span>הדפסה A4</span>
+            </button>
+
             {/* A3 Print / Export Button */}
             <button
               onClick={onOpenA3ExportModal}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-sky-50 text-blue-900 border border-blue-500 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
-              title="שמירת החודש ב-PDF והדפסה A3 לרוחב"
+              title="שמירת החודש ב-PDF והדפסה A3 לרוחב (פוסטר/לוח קיר)"
             >
               <Printer className="w-4 h-4 text-blue-600" />
               <span>שמירה והדפסה A3</span>

@@ -8,28 +8,42 @@
 
 @page {
   size: A3 landscape;
-  margin: 10mm;
+  margin: 8mm;
 }
 
 @media print {
-  body {
-    background-color: white !important;
-    color: black !important;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+  html, body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
+
   .no-print {
     display: none !important;
   }
+
   .print-only {
     display: block !important;
   }
-  .print-container {
+
+  /* Reset modal overlays during print */
+  .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  #a3-printable-document,
+  #a4-printable-document {
     width: 100% !important;
+    min-width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    page-break-inside: avoid;
   }
 }
+

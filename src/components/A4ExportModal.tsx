@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { X, Download, Printer, CheckCircle, FileDown, Loader2, Sparkles, ExternalLink, AlertTriangle } from "lucide-react";
+import { X, Download, Printer, CheckCircle, FileDown, Loader2, Sparkles, ExternalLink, AlertTriangle, LayoutTemplate, RotateCw } from "lucide-react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import { CalendarEvent, WeekData } from "../types";
 import { HEBREW_MONTH_NAMES, HEBREW_WEEKDAY_NAMES, formatIsraeliDate } from "../utils/dateUtils";
 
-interface A3ExportModalProps {
+interface A4ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentDate: Date;
@@ -13,31 +13,33 @@ interface A3ExportModalProps {
   events: CalendarEvent[];
 }
 
-export const A3ExportModal: React.FC<A3ExportModalProps> = ({
+export const A4ExportModal: React.FC<A4ExportModalProps> = ({
   isOpen,
   onClose,
   currentDate,
   weeks,
 }) => {
+  const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfErrorMessage, setPdfErrorMessage] = useState<string | null>(null);
 
-  // Clean up blob URL on unmount or close
+  // Clean up blob URL on unmount or orientation change
   useEffect(() => {
     return () => {
       if (pdfBlobUrl) {
         URL.revokeObjectURL(pdfBlobUrl);
       }
     };
-  }, [pdfBlobUrl]);
+  }, [pdfBlobUrl, orientation]);
 
   if (!isOpen) return null;
 
   const monthName = HEBREW_MONTH_NAMES[currentDate.getMonth()];
   const year = currentDate.getFullYear();
-  const pdfFileName = `לוח גאנט – ${monthName} ${year}.pdf`;
+  const orientationLabel = orientation === "landscape" ? "לרוחב" : "לאורך";
+  const pdfFileName = `לוח גאנט A4 (${orientationLabel}) – ${monthName} ${year}.pdf`;
 
   const handleDownloadPdf = async () => {
     try {
@@ -45,14 +47,14 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
       setPdfErrorMessage(null);
       setDownloadSuccess(false);
 
-      const printableElement = document.getElementById("a3-printable-document");
+      const printableElement = document.getElementById("a4-printable-document");
       if (!printableElement) {
         throw new Error("רכיב ההדפסה לא נמצא במערכת");
       }
 
-      // Render the DOM to canvas with high resolution scale using html2canvas-pro (native oklch & CSS3 support)
+      // Render to canvas with html2canvas-pro at high DPI scale
       const canvas = await html2canvas(printableElement, {
-        scale: 2, // 2x DPI for crystal clear text on A3 paper
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
@@ -61,25 +63,25 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-      // A3 Landscape dimensions in mm: 420 × 297
+      // A4 dimensions in mm: Landscape = 297 x 210, Portrait = 210 x 297
+      const isLandscape = orientation === "landscape";
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
-        format: "a3",
+        format: "a4",
         compress: true,
       });
 
-      const pdfWidth = 420;
-      const pdfHeight = 297;
+      const pdfWidth = isLandscape ? 297 : 210;
+      const pdfHeight = isLandscape ? 210 : 297;
 
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
 
-      // Generate Blob and Blob URL for reliable download across all browsers and iframes
       const blob = pdf.output("blob");
       const blobUrl = URL.createObjectURL(blob);
       setPdfBlobUrl(blobUrl);
 
-      // Automatic trigger download
+      // Trigger automatic download
       const downloadLink = document.createElement("a");
       downloadLink.href = blobUrl;
       downloadLink.download = pdfFileName;
@@ -95,9 +97,9 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
       setIsGeneratingPdf(false);
       setDownloadSuccess(true);
     } catch (err: any) {
-      console.error("PDF generation error:", err);
+      console.error("A4 PDF generation error:", err);
       setIsGeneratingPdf(false);
-      setPdfErrorMessage(err?.message || "חלה שגיאה ביצירת קובץ ה-PDF");
+      setPdfErrorMessage(err?.message || "חלה שגיאה ביצירת קובץ ה-PDF בגודל A4");
     }
   };
 
@@ -106,10 +108,11 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
       window.print();
     } catch (err) {
       console.warn("Native print error:", err);
-      // Fallback to generating and opening PDF
       handleDownloadPdf();
     }
   };
+
+  const isLandscape = orientation === "landscape";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-200 print:p-0 print:bg-white print:static">
@@ -117,12 +120,12 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 no-print">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-700">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-sky-700">
               <Printer className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-lg font-extrabold text-slate-900">
-                שמירה והדפסה A3 לרוחב
+                הדפסה ושמירה A4 (מדפסת רגילה)
               </h3>
               <p className="text-xs text-slate-500 font-medium">
                 {monthName} {year} • חטיבת הביניים ב׳ אבו סנאן
@@ -130,7 +133,33 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Orientation Switcher */}
+            <div className="bg-slate-200/80 p-1 rounded-full flex items-center gap-1 text-xs font-bold text-slate-700">
+              <button
+                type="button"
+                onClick={() => setOrientation("landscape")}
+                className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                  orientation === "landscape"
+                    ? "bg-white text-sky-800 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                לרוחב (מומלץ לגאנט)
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrientation("portrait")}
+                className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                  orientation === "portrait"
+                    ? "bg-white text-sky-800 shadow-2xs font-extrabold"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                לאורך
+              </button>
+            </div>
+
             <button
               onClick={handleNativePrint}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold transition-colors cursor-pointer shadow-2xs"
@@ -148,19 +177,19 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
               {isGeneratingPdf ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>מפיק PDF בגודל A3...</span>
+                  <span>מפיק PDF A4...</span>
                 </>
               ) : (
                 <>
                   <Download className="w-4 h-4" />
-                  <span>הורדת קובץ PDF (A3)</span>
+                  <span>הורדת PDF A4</span>
                 </>
               )}
             </button>
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition-colors cursor-pointer mr-2"
+              className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition-colors cursor-pointer mr-1"
               title="סגירה"
             >
               <X className="w-4 h-4" />
@@ -168,7 +197,7 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
           </div>
         </div>
 
-        {/* Success and Download Action Card */}
+        {/* Success / Download Card */}
         {downloadSuccess && (
           <div className="mx-6 mt-4 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-950 no-print animate-in slide-in-from-top-2">
             <div className="flex items-center gap-3">
@@ -177,10 +206,10 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
               </div>
               <div>
                 <p className="font-extrabold text-sm text-emerald-900">
-                  קובץ ה-PDF בגודל A3 הופק בהצלחה!
+                  קובץ ה-PDF בגודל A4 ({orientationLabel}) הופק בהצלחה!
                 </p>
                 <p className="text-xs text-emerald-700 mt-0.5">
-                  אם ההורדה האוטומטית לא החלה (למשל עקב הגדרות דפדפן):
+                  אם ההורדה האוטומטית לא החלה במכשירך:
                 </p>
               </div>
             </div>
@@ -223,52 +252,55 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
         {/* Preview Area */}
         <div className="p-6 overflow-y-auto bg-slate-100/60 flex flex-col items-center print:p-0 print:bg-white print:overflow-visible">
           <div className="w-full text-xs text-slate-500 mb-3 flex items-center justify-between no-print">
-            <span>תצוגה מקדימה של דף ה-A3 (לרוחב, מוכן להדפסה ללא כפתורי עריכה):</span>
-            <span className="font-semibold text-indigo-700 flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
+              <LayoutTemplate className="w-3.5 h-3.5 text-sky-600" />
+              תצוגה מקדימה של דף A4 סטנדרטי ({orientationLabel}):
+            </span>
+            <span className="font-semibold text-sky-700 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" />
-              פורמט 420mm × 297mm
+              {isLandscape ? "297mm × 210mm (לרוחב)" : "210mm × 297mm (לאורך)"}
             </span>
           </div>
 
           {/* Printable Layout Target Container for HTML2Canvas */}
           <div
-            id="a3-printable-document"
-            className="w-full bg-white rounded-xl shadow-lg border border-slate-300 p-8 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none"
+            id="a4-printable-document"
+            className="w-full bg-white rounded-xl shadow-lg border border-slate-300 p-6 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none"
             style={{
-              minWidth: "900px",
-              aspectRatio: "420 / 297",
+              maxWidth: isLandscape ? "880px" : "620px",
+              aspectRatio: isLandscape ? "297 / 210" : "210 / 297",
               backgroundColor: "#ffffff",
               color: "#0f172a",
             }}
           >
             {/* Header for print/PDF */}
             <div
-              className="pb-4 mb-6 flex items-center justify-between"
+              className="pb-3 mb-4 flex items-center justify-between"
               style={{ borderBottom: "2px solid #0f172a" }}
             >
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-normal" style={{ color: "#0f172a" }}>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-normal" style={{ color: "#0f172a" }}>
                   לוח גאנט – חטיבת הביניים ב׳ אבו סנאן
                 </h1>
-                <div className="flex items-center gap-3 mt-1">
+                <div className="flex items-center gap-2.5 mt-0.5">
                   <span
-                    className="text-sm font-semibold px-2.5 py-0.5 rounded"
+                    className="text-xs font-semibold px-2 py-0.5 rounded"
                     style={{ backgroundColor: "#f1f5f9", color: "#334155" }}
                   >
                     סמל מוסד: 640615
                   </span>
-                  <span className="text-xs font-medium" style={{ color: "#64748b" }}>
+                  <span className="text-[11px] font-medium" style={{ color: "#64748b" }}>
                     שנת הלימודים תשפ״ז
                   </span>
                 </div>
               </div>
 
               <div className="text-left">
-                <div className="text-3xl font-bold" style={{ color: "#1e40af" }}>
+                <div className="text-2xl font-bold" style={{ color: "#1e40af" }}>
                   {monthName} {year}
                 </div>
-                <div className="text-xs font-medium mt-0.5" style={{ color: "#64748b" }}>
-                  לוח תכנון ופעילות חודשי
+                <div className="text-[11px] font-medium mt-0.5" style={{ color: "#64748b" }}>
+                  פורמט A4 ({orientationLabel})
                 </div>
               </div>
             </div>
@@ -280,18 +312,18 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
             >
               {/* Weekday header */}
               <div
-                className="grid grid-cols-7 text-white font-bold text-sm"
+                className="grid grid-cols-7 text-white font-bold text-xs"
                 style={{ borderBottom: "2px solid #0369a1" }}
               >
                 {HEBREW_WEEKDAY_NAMES.map((name, i) => {
-                  const isOffDay = i === 0 || i === 5; // Sunday & Friday
+                  const isOffDay = i === 0 || i === 5;
                   return (
                     <div
                       key={name}
                       style={{
                         backgroundColor: isOffDay ? "#4f46e5" : "#2563eb",
                         color: "#ffffff",
-                        padding: "10px 0",
+                        padding: isLandscape ? "7px 0" : "5px 0",
                         textAlign: "center",
                         fontWeight: 700,
                         borderLeft: i < 6 ? "1px solid rgba(255,255,255,0.25)" : "none",
@@ -306,10 +338,12 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
               {/* Weeks */}
               <div style={{ backgroundColor: "#ffffff" }}>
                 {weeks.map((week, weekIdx) => {
-                  const minH = Math.max(90, 45 + week.maxSlots * 26);
+                  const baseH = isLandscape ? 38 : 46;
+                  const slotH = isLandscape ? 22 : 24;
+                  const minH = Math.max(isLandscape ? 70 : 80, baseH + week.maxSlots * slotH);
                   return (
                     <div
-                      key={`print-week-${weekIdx}`}
+                      key={`a4-week-${weekIdx}`}
                       className="relative"
                       style={{
                         minHeight: `${minH}px`,
@@ -320,9 +354,9 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                       <div className="grid grid-cols-7 absolute inset-0">
                         {week.days.map((day, dIdx) => (
                           <div
-                            key={`print-${day.dateString}`}
+                            key={`a4-${day.dateString}`}
                             style={{
-                              padding: "6px",
+                              padding: "4px",
                               display: "flex",
                               flexDirection: "col",
                               justifyContent: "space-between",
@@ -337,9 +371,9 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                             <div className="flex items-start justify-start w-full">
                               <span
                                 style={{
-                                  fontSize: "12px",
+                                  fontSize: "11px",
                                   fontWeight: day.isCurrentMonth ? 800 : 500,
-                                  padding: "2px 6px",
+                                  padding: "1px 5px",
                                   borderRadius: "9999px",
                                   backgroundColor: day.isToday ? "#1d4ed8" : "transparent",
                                   color: day.isToday
@@ -356,16 +390,16 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                         ))}
                       </div>
 
-                      {/* Continuous Gantt Ribbon Segments for Print */}
-                      <div className="relative pt-7 pb-1.5 px-0.5 space-y-1.5">
+                      {/* Continuous Gantt Ribbon Segments */}
+                      <div className="relative pt-6 pb-1 px-0.5 space-y-1">
                         {Array.from({ length: week.maxSlots }).map((_, sIdx) => {
                           const segs = week.segments.filter(
                             (s) => s.slotIndex === sIdx
                           );
                           return (
                             <div
-                              key={`print-slot-${sIdx}`}
-                              className="grid grid-cols-7 h-7 gap-0"
+                              key={`a4-slot-${sIdx}`}
+                              className="grid grid-cols-7 h-6 gap-0"
                             >
                               {segs.map((seg) => {
                                 const isSingle =
@@ -384,16 +418,16 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
 
                                 return (
                                   <div
-                                    key={`print-${seg.event.id}-${seg.startCol}`}
+                                    key={`a4-seg-${seg.event.id}-${seg.startCol}`}
                                     style={{
                                       gridColumnStart: seg.startCol + 1,
                                       gridColumnEnd: seg.endCol + 2,
                                       backgroundColor: seg.event.color,
                                       color: seg.event.textColor || "#ffffff",
                                     }}
-                                    className={`h-7 px-2 flex items-center justify-between text-xs shadow-2xs overflow-hidden ${roundedStyle}`}
+                                    className={`h-6 px-1.5 flex items-center justify-between text-[11px] shadow-2xs overflow-hidden ${roundedStyle}`}
                                   >
-                                    <span className="truncate text-[12.5px] font-semibold">
+                                    <span className="truncate font-semibold">
                                       {seg.event.title}
                                     </span>
                                   </div>
@@ -411,14 +445,14 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
 
             {/* Print Footer */}
             <div
-              className="mt-4 pt-3 flex items-center justify-between text-xs font-medium"
+              className="mt-3 pt-2.5 flex items-center justify-between text-[11px] font-medium"
               style={{ borderTop: "1px solid #cbd5e1", color: "#64748b" }}
             >
-              <span>חטיבת הביניים ב׳ אבו סנאן • משרד החינוך • מחוז צפון</span>
+              <span>חטיבת הביניים ב׳ אבו סנאן • משרד החינוך</span>
               <span className="text-center font-semibold" style={{ color: "#475569" }}>
-                כל הזכויות שמורות לעמאר פאעור © {new Date().getFullYear()} • Amar Faour
+                כל הזכויות שמורות לעמאר פאעור © {new Date().getFullYear()}
               </span>
-              <span>הופק בתאריך: {formatIsraeliDate(new Date().toISOString().split("T")[0])}</span>
+              <span>{formatIsraeliDate(new Date().toISOString().split("T")[0])}</span>
             </div>
           </div>
         </div>
