@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search, Cloud } from "lucide-react";
+import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search, Cloud, CalendarDays } from "lucide-react";
 
 interface HeaderProps {
   isEditMode: boolean;
@@ -9,6 +9,7 @@ interface HeaderProps {
   onOpenA4ExportModal: () => void;
   onOpenA3ExportModal: () => void;
   onOpenSearchModal: () => void;
+  onOpenYearlyViewModal?: () => void;
   onExportBackup: () => void;
   onImportBackup: (file: File) => void;
 }
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenA4ExportModal,
   onOpenA3ExportModal,
   onOpenSearchModal,
+  onOpenYearlyViewModal,
   onExportBackup,
   onImportBackup,
 }) => {
@@ -98,6 +100,18 @@ export const Header: React.FC<HeaderProps> = ({
               <Search className="w-4 h-4 text-blue-600" />
               <span>חיפוש אירועים</span>
             </button>
+
+            {/* Yearly View Button */}
+            {onOpenYearlyViewModal && (
+              <button
+                onClick={onOpenYearlyViewModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-sky-50 text-blue-900 border border-blue-500 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                title="תצוגה שנתית של כל חודשי שנת הלימודים"
+              >
+                <CalendarDays className="w-4 h-4 text-blue-600" />
+                <span>תצוגה שנתית</span>
+              </button>
+            )}
 
             {/* Backup Export & Import Buttons (Visible ONLY in Edit Mode) */}
             {isEditMode && (

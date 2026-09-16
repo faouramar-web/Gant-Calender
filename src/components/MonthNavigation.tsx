@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, Sparkles } from "lucide-react";
+import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CalendarDays, Sparkles } from "lucide-react";
 import { HEBREW_MONTH_NAMES } from "../utils/dateUtils";
 
 interface MonthNavigationProps {
@@ -7,6 +7,7 @@ interface MonthNavigationProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
+  onOpenYearlyView: () => void;
   totalEventsInMonth: number;
   hasNewEvents?: boolean;
 }
@@ -16,6 +17,7 @@ export const MonthNavigation: React.FC<MonthNavigationProps> = ({
   onPrevMonth,
   onNextMonth,
   onToday,
+  onOpenYearlyView,
   totalEventsInMonth,
   hasNewEvents,
 }) => {
@@ -59,16 +61,26 @@ export const MonthNavigation: React.FC<MonthNavigationProps> = ({
         </button>
       </div>
 
-      {/* Right side helper info & Today button */}
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-full text-slate-700 text-xs sm:text-sm font-bold shadow-2xs">
+      {/* Right side helper info & Action buttons */}
+      <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-end">
+        <div className="hidden lg:flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 rounded-full text-slate-700 text-xs sm:text-sm font-bold shadow-2xs">
           <Sparkles className="w-4 h-4 text-[#0EA5E9]" />
-          <span>{totalEventsInMonth} אירועים ופעילויות בחודש</span>
+          <span>{totalEventsInMonth} אירועים בחודש</span>
         </div>
 
         <button
+          onClick={onOpenYearlyView}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-sky-50 text-blue-900 hover:text-blue-950 text-xs sm:text-sm font-bold border border-blue-500 hover:border-blue-600 transition-all active:scale-95 cursor-pointer shadow-2xs"
+          title="הצגת כל חודשי שנת הלימודים במסך אחד ובחירת חודש"
+        >
+          <CalendarDays className="w-4 h-4 text-blue-600" />
+          <span>תצוגה שנתית</span>
+        </button>
+
+        <button
           onClick={onToday}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-sky-50 text-[#0EA5E9] hover:text-[#0284c7] text-sm font-black border border-slate-200 hover:border-sky-200 transition-all active:scale-95 cursor-pointer shadow-2xs"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-sky-50 text-[#0EA5E9] hover:text-[#0284c7] text-xs sm:text-sm font-black border border-slate-200 hover:border-sky-200 transition-all active:scale-95 cursor-pointer shadow-2xs"
+          title="מעבר לתאריך הנוכחי"
         >
           <CalendarIcon className="w-4 h-4 text-[#0EA5E9]" />
           <span>היום</span>

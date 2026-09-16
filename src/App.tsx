@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { A3ExportModal } from "./components/A3ExportModal";
 import { A4ExportModal } from "./components/A4ExportModal";
 import { SearchEventsModal } from "./components/SearchEventsModal";
+import { YearlyOverviewModal } from "./components/YearlyOverviewModal";
 import { CalendarEvent } from "./types";
 import { buildMonthWeeks, HEBREW_MONTH_NAMES } from "./utils/dateUtils";
 import {
@@ -46,6 +47,7 @@ export default function App() {
   const [isA4ExportModalOpen, setIsA4ExportModalOpen] = useState(false);
   const [isA3ExportModalOpen, setIsA3ExportModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isYearlyViewModalOpen, setIsYearlyViewModalOpen] = useState(false);
 
   // Selected item states
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -315,6 +317,7 @@ export default function App() {
         onOpenA4ExportModal={() => setIsA4ExportModalOpen(true)}
         onOpenA3ExportModal={() => setIsA3ExportModalOpen(true)}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
+        onOpenYearlyViewModal={() => setIsYearlyViewModalOpen(true)}
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
       />
@@ -370,6 +373,7 @@ export default function App() {
               onPrevMonth={handlePrevMonth}
               onNextMonth={handleNextMonth}
               onToday={handleToday}
+              onOpenYearlyView={() => setIsYearlyViewModalOpen(true)}
               totalEventsInMonth={totalEventsInMonth}
               hasNewEvents={hasNewEventsInMonth}
             />
@@ -521,6 +525,18 @@ export default function App() {
         onEditEvent={(event) => {
           setSelectedEvent(event);
           setIsEventModalOpen(true);
+        }}
+      />
+
+      {/* Yearly Overview Modal */}
+      <YearlyOverviewModal
+        isOpen={isYearlyViewModalOpen}
+        onClose={() => setIsYearlyViewModalOpen(false)}
+        currentDate={currentDate}
+        events={events}
+        onSelectMonth={(selectedDate) => {
+          setCurrentDate(selectedDate);
+          showToast(`עברת לחודש ${HEBREW_MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`, "success");
         }}
       />
     </div>
