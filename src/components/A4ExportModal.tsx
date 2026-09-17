@@ -75,7 +75,14 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
       const pdfWidth = isLandscape ? 297 : 210;
       const pdfHeight = isLandscape ? 210 : 297;
 
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+      // Fit proportionally without stretching or distortion
+      const scaleFactor = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+      const renderWidth = canvas.width * scaleFactor;
+      const renderHeight = canvas.height * scaleFactor;
+      const offsetX = (pdfWidth - renderWidth) / 2;
+      const offsetY = (pdfHeight - renderHeight) / 2;
+
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
 
       const blob = pdf.output("blob");
       const blobUrl = URL.createObjectURL(blob);
@@ -265,12 +272,17 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
           {/* Printable Layout Target Container for HTML2Canvas */}
           <div
             id="a4-printable-document"
+            dir="rtl"
             className="w-full bg-white rounded-xl shadow-lg border border-slate-300 p-6 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none"
             style={{
               maxWidth: isLandscape ? "880px" : "620px",
-              aspectRatio: isLandscape ? "297 / 210" : "210 / 297",
+              width: "100%",
               backgroundColor: "#ffffff",
               color: "#0f172a",
+              direction: "rtl",
+              textAlign: "right",
+              boxSizing: "border-box",
+              fontFamily: "'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             }}
           >
             {/* Header for print/PDF */}
@@ -308,12 +320,23 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
             {/* Print Grid */}
             <div
               className="rounded-lg overflow-hidden"
-              style={{ border: "2px solid #1e293b", backgroundColor: "#ffffff" }}
+              style={{
+                border: "2px solid #1e293b",
+                backgroundColor: "#ffffff",
+                width: "100%",
+                boxSizing: "border-box",
+                direction: "rtl",
+              }}
             >
-              {/* Weekday header */}
+              {/* Weekday header row */}
               <div
-                className="grid grid-cols-7 text-white font-bold text-xs"
-                style={{ borderBottom: "2px solid #0369a1" }}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  width: "100%",
+                  borderBottom: "2px solid #0369a1",
+                  boxSizing: "border-box",
+                }}
               >
                 {HEBREW_WEEKDAY_NAMES.map((name, i) => {
                   const isOffDay = i === 0 || i === 5;
@@ -321,11 +344,15 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                     <div
                       key={name}
                       style={{
+                        width: "14.2857%",
+                        flex: "0 0 14.2857%",
                         backgroundColor: isOffDay ? "#4f46e5" : "#2563eb",
                         color: "#ffffff",
                         padding: isLandscape ? "7px 0" : "5px 0",
                         textAlign: "center",
                         fontWeight: 700,
+                        fontSize: "12px",
+                        boxSizing: "border-box",
                         borderLeft: i < 6 ? "1px solid rgba(255,255,255,0.25)" : "none",
                       }}
                     >
@@ -336,29 +363,48 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
               </div>
 
               {/* Weeks */}
-              <div style={{ backgroundColor: "#ffffff" }}>
+              <div style={{ backgroundColor: "#ffffff", width: "100%" }}>
                 {weeks.map((week, weekIdx) => {
-                  const baseH = isLandscape ? 38 : 46;
-                  const slotH = isLandscape ? 22 : 24;
-                  const minH = Math.max(isLandscape ? 70 : 80, baseH + week.maxSlots * slotH);
+                  const baseH = isLandscape ? 40 : 48;
+                  const slotH = isLandscape ? 24 : 26;
+                  const minH = Math.max(isLandscape ? 72 : 82, baseH + week.maxSlots * slotH);
                   return (
                     <div
                       key={`a4-week-${weekIdx}`}
-                      className="relative"
                       style={{
+                        position: "relative",
                         minHeight: `${minH}px`,
+                        width: "100%",
+                        boxSizing: "border-box",
                         borderBottom: weekIdx < weeks.length - 1 ? "1px solid #cbd5e1" : "none",
                       }}
                     >
                       {/* Day cells */}
-                      <div className="grid grid-cols-7 absolute inset-0">
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          bottom: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "row",
+                          boxSizing: "border-box",
+                        }}
+                      >
                         {week.days.map((day, dIdx) => (
                           <div
                             key={`a4-${day.dateString}`}
                             style={{
+                              width: "14.2857%",
+                              flex: "0 0 14.2857%",
+                              boxSizing: "border-box",
+                              height: "100%",
                               padding: "4px",
                               display: "flex",
-                              flexDirection: "col",
+                              flexDirection: "column",
                               justifyContent: "space-between",
                               backgroundColor: !day.isCurrentMonth
                                 ? "#f8fafc"
@@ -368,7 +414,7 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                               borderLeft: dIdx < 6 ? "1px solid #e2e8f0" : "none",
                             }}
                           >
-                            <div className="flex items-start justify-start w-full">
+                            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "flex-start", width: "100%" }}>
                               <span
                                 style={{
                                   fontSize: "11px",
@@ -381,6 +427,7 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                                     : day.isCurrentMonth
                                     ? "#0f172a"
                                     : "#94a3b8",
+                                  display: "inline-block",
                                 }}
                               >
                                 {day.dayNumber}
@@ -391,7 +438,18 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                       </div>
 
                       {/* Continuous Gantt Ribbon Segments */}
-                      <div className="relative pt-6 pb-1 px-0.5 space-y-1">
+                      <div
+                        style={{
+                          position: "relative",
+                          paddingTop: "26px",
+                          paddingBottom: "4px",
+                          paddingLeft: "2px",
+                          paddingRight: "2px",
+                          zIndex: 2,
+                          width: "100%",
+                          boxSizing: "border-box",
+                        }}
+                      >
                         {Array.from({ length: week.maxSlots }).map((_, sIdx) => {
                           const segs = week.segments.filter(
                             (s) => s.slotIndex === sIdx
@@ -399,35 +457,57 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                           return (
                             <div
                               key={`a4-slot-${sIdx}`}
-                              className="grid grid-cols-7 h-6 gap-0"
+                              style={{
+                                position: "relative",
+                                height: "22px",
+                                marginBottom: "3px",
+                                width: "100%",
+                                boxSizing: "border-box",
+                              }}
                             >
                               {segs.map((seg) => {
                                 const isSingle =
                                   seg.event.startDate === seg.event.endDate;
-                                const roundedStyle = isSingle
-                                  ? "rounded-md"
-                                  : `${
-                                      seg.isStartOfEvent
-                                        ? "rounded-r-md"
-                                        : "rounded-r-none"
-                                    } ${
-                                      seg.isEndOfEvent
-                                        ? "rounded-l-md"
-                                        : "rounded-l-none"
-                                    }`;
+                                const rightPct = (seg.startCol / 7) * 100;
+                                const widthPct = ((seg.endCol - seg.startCol + 1) / 7) * 100;
+                                const isStart = seg.isStartOfEvent;
+                                const isEnd = seg.isEndOfEvent;
 
                                 return (
                                   <div
                                     key={`a4-seg-${seg.event.id}-${seg.startCol}`}
                                     style={{
-                                      gridColumnStart: seg.startCol + 1,
-                                      gridColumnEnd: seg.endCol + 2,
+                                      position: "absolute",
+                                      right: `${rightPct}%`,
+                                      width: `${widthPct}%`,
+                                      top: 0,
+                                      bottom: 0,
                                       backgroundColor: seg.event.color,
                                       color: seg.event.textColor || "#ffffff",
+                                      padding: "0 6px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "flex-start",
+                                      fontSize: "11px",
+                                      fontWeight: 700,
+                                      overflow: "hidden",
+                                      boxSizing: "border-box",
+                                      borderTopRightRadius: isSingle || isStart ? "4px" : "0px",
+                                      borderBottomRightRadius: isSingle || isStart ? "4px" : "0px",
+                                      borderTopLeftRadius: isSingle || isEnd ? "4px" : "0px",
+                                      borderBottomLeftRadius: isSingle || isEnd ? "4px" : "0px",
+                                      boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
                                     }}
-                                    className={`h-6 px-1.5 flex items-center justify-between text-[11px] shadow-2xs overflow-hidden ${roundedStyle}`}
                                   >
-                                    <span className="truncate font-semibold">
+                                    <span
+                                      style={{
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        width: "100%",
+                                        textAlign: "right",
+                                      }}
+                                    >
                                       {seg.event.title}
                                     </span>
                                   </div>

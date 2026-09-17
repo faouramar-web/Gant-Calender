@@ -72,7 +72,14 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
       const pdfWidth = 420;
       const pdfHeight = 297;
 
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+      // Fit proportionally without stretching or distortion
+      const scaleFactor = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+      const renderWidth = canvas.width * scaleFactor;
+      const renderHeight = canvas.height * scaleFactor;
+      const offsetX = (pdfWidth - renderWidth) / 2;
+      const offsetY = (pdfHeight - renderHeight) / 2;
+
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
 
       // Generate Blob and Blob URL for reliable download across all browsers and iframes
       const blob = pdf.output("blob");
@@ -233,12 +240,17 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
           {/* Printable Layout Target Container for HTML2Canvas */}
           <div
             id="a3-printable-document"
+            dir="rtl"
             className="w-full bg-white rounded-xl shadow-lg border border-slate-300 p-8 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none"
             style={{
               minWidth: "900px",
-              aspectRatio: "420 / 297",
+              width: "100%",
               backgroundColor: "#ffffff",
               color: "#0f172a",
+              direction: "rtl",
+              textAlign: "right",
+              boxSizing: "border-box",
+              fontFamily: "'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             }}
           >
             {/* Header for print/PDF */}
@@ -276,12 +288,23 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
             {/* Print Grid */}
             <div
               className="rounded-lg overflow-hidden"
-              style={{ border: "2px solid #1e293b", backgroundColor: "#ffffff" }}
+              style={{
+                border: "2px solid #1e293b",
+                backgroundColor: "#ffffff",
+                width: "100%",
+                boxSizing: "border-box",
+                direction: "rtl",
+              }}
             >
-              {/* Weekday header */}
+              {/* Weekday header row */}
               <div
-                className="grid grid-cols-7 text-white font-bold text-sm"
-                style={{ borderBottom: "2px solid #0369a1" }}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  width: "100%",
+                  borderBottom: "2px solid #0369a1",
+                  boxSizing: "border-box",
+                }}
               >
                 {HEBREW_WEEKDAY_NAMES.map((name, i) => {
                   const isOffDay = i === 0 || i === 5; // Sunday & Friday
@@ -289,11 +312,15 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                     <div
                       key={name}
                       style={{
+                        width: "14.2857%",
+                        flex: "0 0 14.2857%",
                         backgroundColor: isOffDay ? "#4f46e5" : "#2563eb",
                         color: "#ffffff",
                         padding: "10px 0",
                         textAlign: "center",
                         fontWeight: 700,
+                        fontSize: "13px",
+                        boxSizing: "border-box",
                         borderLeft: i < 6 ? "1px solid rgba(255,255,255,0.25)" : "none",
                       }}
                     >
@@ -304,27 +331,46 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
               </div>
 
               {/* Weeks */}
-              <div style={{ backgroundColor: "#ffffff" }}>
+              <div style={{ backgroundColor: "#ffffff", width: "100%" }}>
                 {weeks.map((week, weekIdx) => {
                   const minH = Math.max(90, 45 + week.maxSlots * 26);
                   return (
                     <div
                       key={`print-week-${weekIdx}`}
-                      className="relative"
                       style={{
+                        position: "relative",
                         minHeight: `${minH}px`,
+                        width: "100%",
+                        boxSizing: "border-box",
                         borderBottom: weekIdx < weeks.length - 1 ? "1px solid #cbd5e1" : "none",
                       }}
                     >
                       {/* Day cells */}
-                      <div className="grid grid-cols-7 absolute inset-0">
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          bottom: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "row",
+                          boxSizing: "border-box",
+                        }}
+                      >
                         {week.days.map((day, dIdx) => (
                           <div
                             key={`print-${day.dateString}`}
                             style={{
+                              width: "14.2857%",
+                              flex: "0 0 14.2857%",
+                              boxSizing: "border-box",
+                              height: "100%",
                               padding: "6px",
                               display: "flex",
-                              flexDirection: "col",
+                              flexDirection: "column",
                               justifyContent: "space-between",
                               backgroundColor: !day.isCurrentMonth
                                 ? "#f8fafc"
@@ -334,7 +380,7 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                               borderLeft: dIdx < 6 ? "1px solid #e2e8f0" : "none",
                             }}
                           >
-                            <div className="flex items-start justify-start w-full">
+                            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "flex-start", width: "100%" }}>
                               <span
                                 style={{
                                   fontSize: "12px",
@@ -347,6 +393,7 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                                     : day.isCurrentMonth
                                     ? "#0f172a"
                                     : "#94a3b8",
+                                  display: "inline-block",
                                 }}
                               >
                                 {day.dayNumber}
@@ -357,7 +404,18 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                       </div>
 
                       {/* Continuous Gantt Ribbon Segments for Print */}
-                      <div className="relative pt-7 pb-1.5 px-0.5 space-y-1.5">
+                      <div
+                        style={{
+                          position: "relative",
+                          paddingTop: "28px",
+                          paddingBottom: "6px",
+                          paddingLeft: "2px",
+                          paddingRight: "2px",
+                          zIndex: 2,
+                          width: "100%",
+                          boxSizing: "border-box",
+                        }}
+                      >
                         {Array.from({ length: week.maxSlots }).map((_, sIdx) => {
                           const segs = week.segments.filter(
                             (s) => s.slotIndex === sIdx
@@ -365,35 +423,57 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
                           return (
                             <div
                               key={`print-slot-${sIdx}`}
-                              className="grid grid-cols-7 h-7 gap-0"
+                              style={{
+                                position: "relative",
+                                height: "26px",
+                                marginBottom: "4px",
+                                width: "100%",
+                                boxSizing: "border-box",
+                              }}
                             >
                               {segs.map((seg) => {
                                 const isSingle =
                                   seg.event.startDate === seg.event.endDate;
-                                const roundedStyle = isSingle
-                                  ? "rounded-md"
-                                  : `${
-                                      seg.isStartOfEvent
-                                        ? "rounded-r-md"
-                                        : "rounded-r-none"
-                                    } ${
-                                      seg.isEndOfEvent
-                                        ? "rounded-l-md"
-                                        : "rounded-l-none"
-                                    }`;
+                                const rightPct = (seg.startCol / 7) * 100;
+                                const widthPct = ((seg.endCol - seg.startCol + 1) / 7) * 100;
+                                const isStart = seg.isStartOfEvent;
+                                const isEnd = seg.isEndOfEvent;
 
                                 return (
                                   <div
                                     key={`print-${seg.event.id}-${seg.startCol}`}
                                     style={{
-                                      gridColumnStart: seg.startCol + 1,
-                                      gridColumnEnd: seg.endCol + 2,
+                                      position: "absolute",
+                                      right: `${rightPct}%`,
+                                      width: `${widthPct}%`,
+                                      top: 0,
+                                      bottom: 0,
                                       backgroundColor: seg.event.color,
                                       color: seg.event.textColor || "#ffffff",
+                                      padding: "0 8px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "flex-start",
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                      overflow: "hidden",
+                                      boxSizing: "border-box",
+                                      borderTopRightRadius: isSingle || isStart ? "6px" : "0px",
+                                      borderBottomRightRadius: isSingle || isStart ? "6px" : "0px",
+                                      borderTopLeftRadius: isSingle || isEnd ? "6px" : "0px",
+                                      borderBottomLeftRadius: isSingle || isEnd ? "6px" : "0px",
+                                      boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
                                     }}
-                                    className={`h-7 px-2 flex items-center justify-between text-xs shadow-2xs overflow-hidden ${roundedStyle}`}
                                   >
-                                    <span className="truncate text-[12.5px] font-semibold">
+                                    <span
+                                      style={{
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        width: "100%",
+                                        textAlign: "right",
+                                      }}
+                                    >
                                       {seg.event.title}
                                     </span>
                                   </div>
