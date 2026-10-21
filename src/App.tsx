@@ -309,6 +309,7 @@ export default function App() {
         onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
         onExitEditMode={() => {
           setIsEditMode(false);
+          setIsEmailAlertsModalOpen(false);
           showToast("חזרת למצב צפייה בלבד", "success");
         }}
         onOpenAddEventModal={() => {
@@ -320,7 +321,14 @@ export default function App() {
         onOpenA3ExportModal={() => setIsA3ExportModalOpen(true)}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onOpenYearlyViewModal={() => setIsYearlyViewModalOpen(true)}
-        onOpenEmailAlertsModal={() => setIsEmailAlertsModalOpen(true)}
+        onOpenEmailAlertsModal={() => {
+          if (!isEditMode) {
+            showToast("גישה מוגבלת: נדרשת כניסה למצב עריכה עם סיסמה", "warning");
+            setIsPasswordModalOpen(true);
+            return;
+          }
+          setIsEmailAlertsModalOpen(true);
+        }}
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
       />
@@ -543,12 +551,14 @@ export default function App() {
         }}
       />
 
-      {/* Email Alerts Modal */}
-      <EmailAlertsModal
-        isOpen={isEmailAlertsModalOpen}
-        onClose={() => setIsEmailAlertsModalOpen(false)}
-        onShowToast={showToast}
-      />
+      {/* Email Alerts Modal (Protected: Accessible ONLY in Edit Mode) */}
+      {isEditMode && (
+        <EmailAlertsModal
+          isOpen={isEmailAlertsModalOpen}
+          onClose={() => setIsEmailAlertsModalOpen(false)}
+          onShowToast={showToast}
+        />
+      )}
     </div>
   );
 }

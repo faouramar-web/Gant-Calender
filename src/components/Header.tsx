@@ -115,21 +115,21 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Email Alerts to Staff Button */}
-            {onOpenEmailAlertsModal && (
-              <button
-                onClick={onOpenEmailAlertsModal}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-400 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
-                title="התראות מייל אוטומטיות יום לפני האירוע"
-              >
-                <Mail className="w-4 h-4 text-sky-600" />
-                <span>התראות מייל לצוות</span>
-              </button>
-            )}
-
-            {/* Backup Export & Import Buttons (Visible ONLY in Edit Mode) */}
+            {/* Action buttons visible ONLY in Edit Mode (Protected by password 160525) */}
             {isEditMode && (
               <>
+                {/* Email Alerts to Staff Button */}
+                {onOpenEmailAlertsModal && (
+                  <button
+                    onClick={onOpenEmailAlertsModal}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-400 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                    title="התראות מייל אוטומטיות יום לפני האירוע (לרכז/ת מורשה בלבד)"
+                  >
+                    <Mail className="w-4 h-4 text-sky-600" />
+                    <span>התראות מייל לצוות</span>
+                  </button>
+                )}
+
                 <button
                   onClick={onExportBackup}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-sky-50 text-sky-800 border border-blue-500 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"

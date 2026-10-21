@@ -189,13 +189,17 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
               <Mail className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-bold">התראות מייל אוטומטיות לצוות</h2>
                 <span className="text-xs font-semibold bg-emerald-400 text-slate-900 px-2 py-0.5 rounded-full">
                   אוטומטי ברקע 24/7
                 </span>
+                <span className="text-xs font-bold bg-amber-400/90 text-amber-950 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  מורשה עריכה (160525)
+                </span>
               </div>
-              <p className="text-xs text-sky-100">
+              <p className="text-xs text-sky-100 mt-0.5">
                 שליחת תזכורת אוטומטית יום לפני כל אירוע בלוח גאנט אל רכז/ת הלוח
               </p>
             </div>
