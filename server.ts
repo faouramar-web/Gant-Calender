@@ -424,6 +424,20 @@ async function startServer() {
     res.json({ success: true, events });
   });
 
+  app.post("/api/events/sync", (req, res) => {
+    try {
+      const { events } = req.body;
+      if (Array.isArray(events) && events.length > 0) {
+        saveEvents(events);
+        console.log(`[Events Sync] Synchronized ${events.length} events from client`);
+        return res.json({ success: true, count: events.length, message: "האירועים סונכרנו בהצלחה עם השרת" });
+      }
+      res.status(400).json({ success: false, error: "לא נשלחו אירועים תקינים לסנכרון" });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "שגיאה בסנכרון אירועים" });
+    }
+  });
+
   app.post("/api/events", (req, res) => {
     try {
       const { title, startDate, endDate, color, textColor, note, author } = req.body;
@@ -530,12 +544,19 @@ async function startServer() {
     const recentLogs = loadAlertsLog().slice(0, 15);
     const currentIsraelHour = getIsraelHour();
 
+    let directGmailUrl = "";
+    if (tomorrowEvents.length > 0) {
+      const { subject, text } = generateEmailContent(tomorrowEvents, tomorrowStr, config.coordinatorName);
+      directGmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(config.coordinatorEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+    }
+
     res.json({
       success: true,
       config,
       todayStr,
       tomorrowStr,
       tomorrowEvents,
+      directGmailUrl,
       recentLogs,
       currentIsraelHour,
       smtpConfigured: Boolean(config.smtpPass || process.env.SMTP_HOST || process.env.GMAIL_APP_PASSWORD),

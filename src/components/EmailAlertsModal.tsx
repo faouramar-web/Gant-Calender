@@ -65,6 +65,7 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
   const [todayStr, setTodayStr] = useState<string>("");
   const [tomorrowStr, setTomorrowStr] = useState<string>("");
   const [tomorrowEvents, setTomorrowEvents] = useState<CalendarEvent[]>([]);
+  const [directGmailUrl, setDirectGmailUrl] = useState<string>("");
   const [recentLogs, setRecentLogs] = useState<AlertLogEntry[]>([]);
   const [lastTestResult, setLastTestResult] = useState<{
     message: string;
@@ -98,6 +99,9 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
         setTodayStr(data.todayStr);
         setTomorrowStr(data.tomorrowStr);
         setTomorrowEvents(data.tomorrowEvents || []);
+        if (data.directGmailUrl) {
+          setDirectGmailUrl(data.directGmailUrl);
+        }
         setRecentLogs(data.recentLogs || []);
         setHasSmtpPass(Boolean(data.hasSmtpPass));
       }
@@ -414,27 +418,57 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
                   </button>
 
                   {showSmtpSection && (
-                    <div className="mt-3 p-3.5 bg-sky-50/70 border border-sky-200 rounded-lg text-xs space-y-2.5">
-                      <p className="text-slate-700 leading-relaxed">
-                        שרתי גוגל אינם מאפשרים לאף שרת חיצוני לשלוח מיילים בשמך ללא אימות מאובטח. כדי שהשרת ישלח בשמך <strong>ברקע בצורה שקטה ללא צורך בלחיצה</strong>, יש ליצור בחשבון ה-Google שלך "סיסמת אפליקציה" (16 אותיות) ולהדביק אותה כאן:
-                      </p>
+                    <div className="mt-3 p-4 bg-sky-50/80 border border-sky-200 rounded-xl text-xs space-y-3">
+                      <div className="border-b border-sky-200 pb-2">
+                        <p className="font-bold text-sky-950 text-xs sm:text-sm">
+                          🔐 למה גוגל דורשת סיסמת אפליקציה?
+                        </p>
+                        <p className="text-slate-700 mt-1 leading-relaxed">
+                          גוגל חוסמת כל שרת או אתר חיצוני מלהיכנס לתיבת ה-Gmail שלך ללא רשות, כדי להגן עליך מספאם ופריצות.
+                          כדי לאפשר למערכת לשלוח אליך מייל שקט <strong>באופן אוטומטי ב-100% ברקע</strong> כשאתה בטיול בלי מחשב - מייצרים קוד מיוחד של 16 אותיות מחשבון גוגל:
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-lg border border-sky-100 font-sans">
+                        <p className="font-bold text-sky-900">מדריך 4 שלבים קצרים (עושים פעם אחת בלבד):</p>
+                        <ol className="list-decimal list-inside space-y-1 text-slate-700 leading-relaxed pr-1">
+                          <li>
+                            נכנסים לאבטחת חשבון גוגל:{" "}
+                            <a
+                              href="https://myaccount.google.com/security"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sky-700 underline font-bold inline-flex items-center gap-0.5"
+                            >
+                              myaccount.google.com/security <ExternalLink className="w-3 h-3 inline" />
+                            </a>
+                          </li>
+                          <li>מוודאים שמופעל <strong>"אימות דו-שלבי" (2-Step Verification)</strong>.</li>
+                          <li>
+                            מחפשים בעמוד <strong>"סיסמאות לאפליקציות" (App passwords)</strong> ויוצרים סיסמה חדשה (למשל בשם: "לוח גאנט").
+                          </li>
+                          <li>
+                            גוגל תציג חלונית עם 16 אותיות (לדוגמה: <code className="bg-slate-100 px-1 py-0.5 rounded text-sky-800 font-mono">abcd efgh ijkl mnop</code>). מעתיקים אותן ומדביקים כאן למטה:
+                          </li>
+                        </ol>
+                      </div>
+
                       <div>
-                        <label className="block text-2xs font-bold text-slate-700 mb-1">
-                          סיסמת אפליקציה של Google (App Password):
+                        <label className="block text-2xs font-bold text-slate-800 mb-1">
+                          הדבק כאן את סיסמת האפליקציה (16 אותיות מגוגל):
                         </label>
                         <input
                           type="password"
                           value={smtpPassInput}
                           onChange={(e) => setSmtpPassInput(e.target.value)}
-                          placeholder={hasSmtpPass ? "•••••••••••••••• (שמור במערכת)" : "הדבק כאן סיסמת אפליקציה בת 16 אותיות"}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-mono text-left"
+                          placeholder={hasSmtpPass ? "•••••••••••••••• (שמורה במערכת ומאומתת)" : "לדוגמה: abcd efgh ijkl mnop"}
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-md text-xs font-mono text-left focus:ring-2 focus:ring-sky-500"
                           dir="ltr"
                         />
                       </div>
-                      <div className="text-2xs text-slate-500 leading-normal">
-                        💡 איך משיגים סיסמת אפליקציה? נכנסים לחשבון Google ➔ אבטחה ➔ אימות דו-שלבי ➔ סיסמאות אפליקציה (App Passwords) ➔ מייצרים סיסמה ומדביקים כאן.
-                        <br />
-                        * לחלופין: אין חובה להגדיר סיסמה – כפתור <strong>"פתח ב-Gmail ושגר כעת"</strong> מכין את כל ההודעה ומשגר מיד!
+                      
+                      <div className="text-2xs text-slate-600 bg-amber-50 border border-amber-200 p-2.5 rounded-md">
+                        💡 <strong>לא רוצה להגדיר סיסמה כעת?</strong> אין בעיה! הכפתור האדום <strong>"פתח ישירות ב-Gmail ושגר כעת"</strong> מכין את המייל במלואו עבורך ופותח אותו ב-Gmail בלחיצה אחת.
                       </div>
                     </div>
                   )}
@@ -494,6 +528,31 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
                         <span className="text-slate-500 font-mono text-2xs">{e.startDate}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Direct 1-Click Launch in Gmail Card */}
+                {directGmailUrl && (
+                  <div className="bg-red-50/90 border-2 border-red-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                    <div className="text-right">
+                      <div className="flex items-center gap-1.5 text-red-950 font-bold text-xs sm:text-sm">
+                        <Mail className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>שליחה ישירה עכשיו ב-Gmail (ללא צורך בסיסמת אפליקציה):</span>
+                      </div>
+                      <p className="text-2xs text-red-800 mt-1 leading-relaxed">
+                        הודעת התזכורת על <strong>"ישיבת מחנכות"</strong> כבר מנוסחת במלואה עם הנמען {emailInput} – לחיצה פותחת את Gmail בטאב חדש מוכנה לשיגור מיידי.
+                      </p>
+                    </div>
+                    <a
+                      href={directGmailUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-sm text-xs sm:text-sm flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>✉️ פתח ישירות ב-Gmail ושגר כעת</span>
+                      <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                    </a>
                   </div>
                 )}
 
@@ -603,28 +662,54 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
                       להלן פירוט האירועים והפעילויות המתוכננים למחר לפי לוח גאנט הבית-ספרי, לצורך היערכות והפצה לצוות המורים:
                     </p>
 
-                    {/* Event Card Sample */}
-                    <div className="bg-white border border-slate-200 border-r-4 border-r-emerald-500 rounded-xl p-4 shadow-2xs space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900 text-base">מסיק הזיתים הבית-ספרי 🌿</span>
-                        <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-2xs font-semibold">
-                          אירוע חד-יומי (22/10/2026)
-                        </span>
+                    {/* Dynamic Event Cards */}
+                    {tomorrowEvents.length > 0 ? (
+                      tomorrowEvents.map((evt) => (
+                        <div
+                          key={evt.id}
+                          className="bg-white border border-slate-200 border-r-4 rounded-xl p-4 shadow-2xs space-y-2"
+                          style={{ borderRightColor: evt.color || "#0284c7" }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900 text-base">{evt.title}</span>
+                            <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-2xs font-semibold">
+                              {evt.startDate === evt.endDate
+                                ? `אירוע חד-יומי (${evt.startDate})`
+                                : `אירוע מתמשך: ${evt.startDate} עד ${evt.endDate}`}
+                            </span>
+                          </div>
+                          <div className="text-xs space-y-1.5 text-slate-600 pt-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-700">👤 אחראי / מזין:</span>
+                              <span className="text-sky-700 font-semibold">{evt.author || "רכזת פדגוגית / צוות בית הספר"}</span>
+                            </div>
+                            {evt.note && (
+                              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-slate-800 text-2xs leading-relaxed">
+                                <strong>📝 פרטים והנחיות:</strong> {evt.note}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-white border border-slate-200 border-r-4 border-r-emerald-500 rounded-xl p-4 shadow-2xs space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 text-base">מסיק הזיתים הבית-ספרי 🌿</span>
+                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-2xs font-semibold">
+                            אירוע חד-יומי (22/10/2026)
+                          </span>
+                        </div>
+                        <div className="text-xs space-y-1.5 text-slate-600 pt-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-700">👤 אחראי / מזין:</span>
+                            <span className="text-sky-700 font-semibold">סאמיה ח'טיב וצוות של"ח</span>
+                          </div>
+                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-slate-800 text-2xs leading-relaxed">
+                            <strong>📝 פרטים והנחיות:</strong> יציאה מרוכזת מרחבת בית הספר למטעי הכפר אבו סנאן. נא לוודא שכל תלמיד מצטייד בכובע, בקבוק מים ונעליים סגורות.
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs space-y-1.5 text-slate-600 pt-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-700">👤 אחראי / מזין:</span>
-                          <span className="text-sky-700 font-semibold">סאמיה ח'טיב וצוות של"ח</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-700">⏰ שעות פעילות:</span>
-                          <span className="text-slate-800 font-semibold">08:30 עד 13:30</span>
-                        </div>
-                        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-slate-800 text-2xs leading-relaxed">
-                          <strong>📝 פרטים והנחיות:</strong> יציאה מרוכזת מרחבת בית הספר למטעי הכפר אבו סנאן. נא לוודא שכל תלמיד מצטייד בכובע, בקבוק מים ונעליים סגורות.
-                        </div>
-                      </div>
-                    </div>
+                    )}
 
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-2xs text-blue-900 leading-relaxed">
                       💡 <strong>הודעה זו נשלחת באופן אוטומטי</strong> יום לפני כל אירוע בלוח גאנט. ניתן להפיץ מידע זה לקבוצת הוואטסאפ או למיילים של צוות המורים המעורב.

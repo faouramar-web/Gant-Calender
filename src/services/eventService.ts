@@ -32,13 +32,26 @@ export function getLocalEvents(): CalendarEvent[] {
   return INITIAL_SCHOOL_EVENTS;
 }
 
-// Save to LocalStorage cache
+// Save to LocalStorage cache and sync with server
 export function saveLocalEvents(events: CalendarEvent[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   } catch (e) {
     console.error("Could not write to localStorage:", e);
   }
+
+  // Asynchronously sync with backend server for alerts
+  try {
+    if (typeof fetch !== "undefined" && Array.isArray(events) && events.length > 0) {
+      fetch("/api/events/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ events })
+      }).catch(() => {
+        // Backend might be offline or static hosting, fail silently
+      });
+    }
+  } catch (_) {}
 }
 
 // Seed initial school events to Firestore if collection is empty
