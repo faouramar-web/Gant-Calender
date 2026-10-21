@@ -1,0 +1,8 @@
+{
+  "coordinatorEmail": "faouramar@gmail.com",
+  "coordinatorName": "רכז/ת לוח גאנט",
+  "enabled": true,
+  "alertHour": 19,
+  "sendDaysBefore": 1,
+  "lastSentDate": ""
+}

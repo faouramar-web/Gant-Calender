@@ -10,6 +10,7 @@ import { A3ExportModal } from "./components/A3ExportModal";
 import { A4ExportModal } from "./components/A4ExportModal";
 import { SearchEventsModal } from "./components/SearchEventsModal";
 import { YearlyOverviewModal } from "./components/YearlyOverviewModal";
+import { EmailAlertsModal } from "./components/EmailAlertsModal";
 import { CalendarEvent } from "./types";
 import { buildMonthWeeks, HEBREW_MONTH_NAMES } from "./utils/dateUtils";
 import {
@@ -48,6 +49,7 @@ export default function App() {
   const [isA3ExportModalOpen, setIsA3ExportModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isYearlyViewModalOpen, setIsYearlyViewModalOpen] = useState(false);
+  const [isEmailAlertsModalOpen, setIsEmailAlertsModalOpen] = useState(false);
 
   // Selected item states
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -318,6 +320,7 @@ export default function App() {
         onOpenA3ExportModal={() => setIsA3ExportModalOpen(true)}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onOpenYearlyViewModal={() => setIsYearlyViewModalOpen(true)}
+        onOpenEmailAlertsModal={() => setIsEmailAlertsModalOpen(true)}
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
       />
@@ -538,6 +541,13 @@ export default function App() {
           setCurrentDate(selectedDate);
           showToast(`עברת לחודש ${HEBREW_MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`, "success");
         }}
+      />
+
+      {/* Email Alerts Modal */}
+      <EmailAlertsModal
+        isOpen={isEmailAlertsModalOpen}
+        onClose={() => setIsEmailAlertsModalOpen(false)}
+        onShowToast={showToast}
       />
     </div>
   );

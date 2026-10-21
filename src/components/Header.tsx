@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search, Cloud, CalendarDays } from "lucide-react";
+import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search, Cloud, CalendarDays, Mail } from "lucide-react";
 
 interface HeaderProps {
   isEditMode: boolean;
@@ -10,6 +10,7 @@ interface HeaderProps {
   onOpenA3ExportModal: () => void;
   onOpenSearchModal: () => void;
   onOpenYearlyViewModal?: () => void;
+  onOpenEmailAlertsModal?: () => void;
   onExportBackup: () => void;
   onImportBackup: (file: File) => void;
 }
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenA3ExportModal,
   onOpenSearchModal,
   onOpenYearlyViewModal,
+  onOpenEmailAlertsModal,
   onExportBackup,
   onImportBackup,
 }) => {
@@ -110,6 +112,18 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <CalendarDays className="w-4 h-4 text-blue-600" />
                 <span>תצוגה שנתית</span>
+              </button>
+            )}
+
+            {/* Email Alerts to Staff Button */}
+            {onOpenEmailAlertsModal && (
+              <button
+                onClick={onOpenEmailAlertsModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-400 text-xs sm:text-sm font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                title="התראות מייל אוטומטיות יום לפני האירוע"
+              >
+                <Mail className="w-4 h-4 text-sky-600" />
+                <span>התראות מייל לצוות</span>
               </button>
             )}
 
