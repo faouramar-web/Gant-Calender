@@ -78,6 +78,10 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
   const [nameInput, setNameInput] = useState("רכז/ת לוח גאנט");
   const [hourInput, setHourInput] = useState(19);
   const [enabledInput, setEnabledInput] = useState(true);
+  const [smtpPassInput, setSmtpPassInput] = useState("");
+  const [hasSmtpPass, setHasSmtpPass] = useState(false);
+  const [showSmtpSection, setShowSmtpSection] = useState(false);
+  const [isTriggeringNow, setIsTriggeringNow] = useState(false);
 
   // Load status from backend
   const loadStatus = async () => {
@@ -95,6 +99,7 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
         setTomorrowStr(data.tomorrowStr);
         setTomorrowEvents(data.tomorrowEvents || []);
         setRecentLogs(data.recentLogs || []);
+        setHasSmtpPass(Boolean(data.hasSmtpPass));
       }
     } catch (err) {
       console.error("Failed to load alerts status:", err);
@@ -120,19 +125,27 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
 
     try {
       setIsSavingConfig(true);
+      const payload: any = {
+        coordinatorEmail: emailInput.trim(),
+        coordinatorName: nameInput.trim(),
+        alertHour: Number(hourInput),
+        enabled: enabledInput
+      };
+      if (smtpPassInput.trim()) {
+        payload.smtpPass = smtpPassInput.trim();
+        payload.smtpUser = emailInput.trim();
+      }
+
       const res = await fetch("/api/alerts/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          coordinatorEmail: emailInput.trim(),
-          coordinatorName: nameInput.trim(),
-          alertHour: Number(hourInput),
-          enabled: enabledInput
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
         setConfig(data.config);
+        setHasSmtpPass(Boolean(data.config.smtpPass));
+        setSmtpPassInput("");
         onShowToast("הגדרות ההתראות נשמרו בהצלחה!", "success");
       } else {
         onShowToast(data.error || "שגיאה בשמירת הגדרות", "error");
@@ -141,6 +154,36 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
       onShowToast("שגיאה בתקשורת עם השרת", "error");
     } finally {
       setIsSavingConfig(false);
+    }
+  };
+
+  const handleTriggerNow = async () => {
+    try {
+      setIsTriggeringNow(true);
+      const res = await fetch("/api/alerts/trigger-now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.triggered) {
+          setLastTestResult({
+            message: data.message,
+            recipient: data.recipient,
+            directGmailUrl: data.directGmailUrl
+          });
+          onShowToast(`התראת האירוע הופקה עבור מחר (${data.targetDate})!`, "success");
+        } else {
+          onShowToast(data.message, "warning");
+        }
+        loadStatus();
+      } else {
+        onShowToast(data.error || "שגיאה בהפעלת התראה", "error");
+      }
+    } catch {
+      onShowToast("שגיאה בתקשורת עם השרת", "error");
+    } finally {
+      setIsTriggeringNow(false);
     }
   };
 
@@ -348,6 +391,55 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
                   </div>
                 </div>
 
+                {/* Optional Google App Password Section */}
+                <div className="pt-3 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowSmtpSection(!showSmtpSection)}
+                    className="text-xs font-bold text-sky-700 hover:text-sky-900 flex items-center justify-between w-full py-1 cursor-pointer"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>⚙️ הגדרת שליחה שקטה אוטומטית ל-Gmail (סיסמת אפליקציה)</span>
+                      {hasSmtpPass ? (
+                        <span className="bg-emerald-100 text-emerald-800 text-2xs px-2 py-0.5 rounded-full font-bold">
+                          ✓ מוגדר
+                        </span>
+                      ) : (
+                        <span className="bg-amber-100 text-amber-800 text-2xs px-2 py-0.5 rounded-full font-bold">
+                          אופציונלי
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-slate-400 text-xs">{showSmtpSection ? "▲ סגור" : "▼ פתח"}</span>
+                  </button>
+
+                  {showSmtpSection && (
+                    <div className="mt-3 p-3.5 bg-sky-50/70 border border-sky-200 rounded-lg text-xs space-y-2.5">
+                      <p className="text-slate-700 leading-relaxed">
+                        שרתי גוגל אינם מאפשרים לאף שרת חיצוני לשלוח מיילים בשמך ללא אימות מאובטח. כדי שהשרת ישלח בשמך <strong>ברקע בצורה שקטה ללא צורך בלחיצה</strong>, יש ליצור בחשבון ה-Google שלך "סיסמת אפליקציה" (16 אותיות) ולהדביק אותה כאן:
+                      </p>
+                      <div>
+                        <label className="block text-2xs font-bold text-slate-700 mb-1">
+                          סיסמת אפליקציה של Google (App Password):
+                        </label>
+                        <input
+                          type="password"
+                          value={smtpPassInput}
+                          onChange={(e) => setSmtpPassInput(e.target.value)}
+                          placeholder={hasSmtpPass ? "•••••••••••••••• (שמור במערכת)" : "הדבק כאן סיסמת אפליקציה בת 16 אותיות"}
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-mono text-left"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="text-2xs text-slate-500 leading-normal">
+                        💡 איך משיגים סיסמת אפליקציה? נכנסים לחשבון Google ➔ אבטחה ➔ אימות דו-שלבי ➔ סיסמאות אפליקציה (App Passwords) ➔ מייצרים סיסמה ומדביקים כאן.
+                        <br />
+                        * לחלופין: אין חובה להגדיר סיסמה – כפתור <strong>"פתח ב-Gmail ושגר כעת"</strong> מכין את כל ההודעה ומשגר מיד!
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-end pt-2">
                   <button
                     type="submit"
@@ -406,49 +498,64 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
                 )}
 
                 {/* Instant Test Action Buttons */}
-                <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                <div className="pt-2 flex flex-col sm:flex-row items-center gap-3 flex-wrap">
+                  <button
+                    onClick={handleTriggerNow}
+                    disabled={isTriggeringNow}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    title="מפעיל עכשיו את מנגנון ההתראות היומי של שבע בערב"
+                  >
+                    <Clock className={`w-4 h-4 ${isTriggeringNow ? "animate-spin" : ""}`} />
+                    <span>
+                      {isTriggeringNow
+                        ? "מריץ בדיקת התראת 19:00..."
+                        : "⚡ הפעל עכשיו בדיקת רקע (התראת 19:00)"}
+                    </span>
+                  </button>
+
                   <button
                     onClick={() => handleSendTest(false)}
                     disabled={isSendingTest}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <Send className={`w-4 h-4 ${isSendingTest ? "animate-spin" : ""}`} />
                     <span>
                       {isSendingTest
-                        ? "מבצע בדיקה ושליחה..."
-                        : `שליחת בדיקה עכשיו למייל שלי (${emailInput})`}
+                        ? "מבצע בדיקה..."
+                        : `בדיקה למייל שלי (${emailInput})`}
                     </span>
                   </button>
 
                   <button
                     onClick={() => handleSendTest(true)}
                     disabled={isSendingTest}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-white border border-indigo-300 hover:bg-indigo-50 text-indigo-900 font-bold text-xs sm:text-sm shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="w-full sm:w-auto px-3.5 py-2.5 rounded-lg bg-white border border-indigo-300 hover:bg-indigo-50 text-indigo-900 font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     title="שליחת בדיקה עם דוגמת מסיק הזיתים והפרטים המלאים"
                   >
-                    <Sparkles className="w-4 h-4 text-indigo-600" />
-                    <span>בדיקה עם אירוע דוגמה (מסיק הזיתים 🌿)</span>
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>אירוע מסיק זיתים לדוגמה 🌿</span>
                   </button>
                 </div>
 
                 {/* Test Feedback Result */}
                 {lastTestResult && (
-                  <div className="bg-white border border-emerald-300 rounded-lg p-3.5 mt-3 space-y-2">
-                    <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs sm:text-sm">
-                      <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
+                  <div className="bg-white border-2 border-emerald-400 rounded-xl p-4 mt-3 space-y-3 shadow-md">
+                    <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs sm:text-sm">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                       <span>{lastTestResult.message}</span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
+                    <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
                       {lastTestResult.directGmailUrl && (
                         <a
                           href={lastTestResult.directGmailUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md font-semibold transition-colors"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-sm transition-all text-xs sm:text-sm"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span>פתיחה ישירה ב-Gmail לשליחה מידית</span>
+                          <Mail className="w-4 h-4" />
+                          <span>✉️ פתח ישירות ב-Gmail ושגר כעת</span>
+                          <ExternalLink className="w-3.5 h-3.5 opacity-80" />
                         </a>
                       )}
 
@@ -457,10 +564,10 @@ export const EmailAlertsModal: React.FC<EmailAlertsModalProps> = ({
                           href={lastTestResult.previewUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md font-semibold transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md font-semibold transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
-                          <span>צפייה בתעודת המייל (Ethereal Preview)</span>
+                          <span>צפייה במייל הבדיקה (Ethereal)</span>
                         </a>
                       )}
                     </div>

@@ -24,6 +24,8 @@ interface AlertsConfig {
   alertHour: number; // 0-23 (e.g. 19 = 19:00 / 7:00 PM)
   sendDaysBefore: number;
   lastSentDate: string; // YYYY-MM-DD
+  smtpUser?: string;
+  smtpPass?: string; // Google 16-character App Password or SMTP pass
 }
 
 interface AlertLogEntry {
@@ -297,7 +299,39 @@ async function sendEmailViaNodemailer(options: {
   html: string;
   text: string;
 }): Promise<{ success: boolean; message: string; previewUrl?: string }> {
-  // If SMTP is configured via env
+  const config = loadAlertsConfig();
+  const gmailPass = (config.smtpPass || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || "").replace(/\s+/g, "");
+  const gmailUser = (config.smtpUser || process.env.GMAIL_USER || process.env.SMTP_USER || config.coordinatorEmail || "").trim();
+
+  // If Gmail App Password or credentials are provided
+  if (gmailPass && gmailUser) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: gmailUser,
+          pass: gmailPass
+        }
+      });
+      await transporter.sendMail({
+        from: `"לוח גאנט אבו סנאן" <${gmailUser}>`,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html
+      });
+      console.log(`[Alerts Engine] Email sent via Gmail to ${options.to}`);
+      return { success: true, message: `המייל נשלח בהצלחה לתיבת ה-Gmail של ${options.to}` };
+    } catch (err: any) {
+      console.warn("[Alerts Engine] Gmail send failed:", err.message);
+      return {
+        success: false,
+        message: `שגיאה בשליחה דרך Gmail (${err.message}) - בדוק את סיסמת האפליקציה`
+      };
+    }
+  }
+
+  // If custom SMTP is configured via env
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
       const transporter = nodemailer.createTransport({
@@ -318,44 +352,15 @@ async function sendEmailViaNodemailer(options: {
       });
       return { success: true, message: `המייל נשלח בהצלחה לכתובת ${options.to} דרך שרת SMTP` };
     } catch (err: any) {
-      console.warn("SMTP send failed, falling back to Ethereal/Local log:", err.message);
+      console.warn("SMTP send failed:", err.message);
     }
   }
 
-  // Fallback: Generate test message via Ethereal or simulate
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    const transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
-      }
-    });
-
-    const info = await transporter.sendMail({
-      from: '"לוח גאנט אבו סנאן" <gantt@abu-snan.school>',
-      to: options.to,
-      subject: options.subject,
-      text: options.text,
-      html: options.html
-    });
-
-    const previewUrl = nodemailer.getTestMessageUrl(info) || undefined;
-    return {
-      success: true,
-      message: `המייל נוצר ותועד בהצלחה עבור ${options.to}`,
-      previewUrl
-    };
-  } catch (err: any) {
-    // Graceful fallback: recorded in applet log
-    return {
-      success: true,
-      message: `ההתראה הופקה ותועדה בהצלחה עבור ${options.to}`
-    };
-  }
+  // Fallback: Recorded in applet log and available for 1-click launch in Gmail
+  return {
+    success: true,
+    message: `התזכורת הופקה ותועדה בהצלחה. לשליחה שקטה ברקע יש להזין סיסמת אפליקציה של גוגל, או לשגר ב-Gmail בלחיצה אחת.`
+  };
 }
 
 async function checkAndSendDailyAlerts(): Promise<void> {
@@ -533,13 +538,14 @@ async function startServer() {
       tomorrowEvents,
       recentLogs,
       currentIsraelHour,
-      smtpConfigured: Boolean(process.env.SMTP_HOST || process.env.GMAIL_USER)
+      smtpConfigured: Boolean(config.smtpPass || process.env.SMTP_HOST || process.env.GMAIL_APP_PASSWORD),
+      hasSmtpPass: Boolean(config.smtpPass || process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS)
     });
   });
 
   app.post("/api/alerts/config", (req, res) => {
     try {
-      const { coordinatorEmail, coordinatorName, enabled, alertHour } = req.body;
+      const { coordinatorEmail, coordinatorName, enabled, alertHour, smtpPass, smtpUser } = req.body;
       const config = loadAlertsConfig();
 
       if (coordinatorEmail) {
@@ -554,11 +560,73 @@ async function startServer() {
       if (typeof alertHour === "number" && alertHour >= 0 && alertHour <= 23) {
         config.alertHour = alertHour;
       }
+      if (smtpPass !== undefined) {
+        config.smtpPass = smtpPass.trim();
+      }
+      if (smtpUser !== undefined) {
+        config.smtpUser = smtpUser.trim().toLowerCase();
+      }
 
       saveAlertsConfig(config);
       res.json({ success: true, config, message: "הגדרות ההתראות עודכנו בהצלחה" });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || "שגיאה בעדכון הגדרות" });
+    }
+  });
+
+  // Manual trigger endpoint for immediate background check
+  app.post("/api/alerts/trigger-now", async (req, res) => {
+    try {
+      const config = loadAlertsConfig();
+      // Reset lastSentDate to allow immediate re-run
+      config.lastSentDate = "";
+      saveAlertsConfig(config);
+
+      const tomorrowStr = getIsraelDateString(1);
+      const tomorrowEvents = findEventsForDate(tomorrowStr);
+
+      if (tomorrowEvents.length === 0) {
+        return res.json({
+          success: true,
+          triggered: false,
+          message: `אין אירועים שמתוכננים למחר (${tomorrowStr}), לכן לא נשלחה התראה.`
+        });
+      }
+
+      const { subject, html, text, hebrewDate } = generateEmailContent(tomorrowEvents, tomorrowStr, config.coordinatorName);
+      const sendResult = await sendEmailViaNodemailer({
+        to: config.coordinatorEmail,
+        subject,
+        html,
+        text
+      });
+
+      const logEntry: AlertLogEntry = {
+        id: `alert-manual-${Date.now()}`,
+        timestamp: Date.now(),
+        recipientEmail: config.coordinatorEmail,
+        targetDate: tomorrowStr,
+        eventTitles: tomorrowEvents.map(e => e.title),
+        status: sendResult.success ? "success" : "failed",
+        details: sendResult.message
+      };
+      appendAlertLog(logEntry);
+
+      const directGmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(config.coordinatorEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+
+      res.json({
+        success: true,
+        triggered: true,
+        message: sendResult.message,
+        recipient: config.coordinatorEmail,
+        targetDate: tomorrowStr,
+        hebrewDate,
+        events: tomorrowEvents,
+        directGmailUrl,
+        logEntry
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "שגיאה בהפעלת התראה" });
     }
   });
 
@@ -633,12 +701,12 @@ async function startServer() {
     }
   });
 
-  // Background interval: runs every 5 minutes to check scheduled daily alerts
+  // Background interval: runs every 60 seconds to check scheduled daily alerts
   setInterval(() => {
     checkAndSendDailyAlerts().catch(err => {
       console.error("[Alerts Engine] Background check failed:", err);
     });
-  }, 5 * 60 * 1000);
+  }, 60 * 1000);
 
   // Initial check on server startup (delayed 5s to allow server to bind)
   setTimeout(() => {
