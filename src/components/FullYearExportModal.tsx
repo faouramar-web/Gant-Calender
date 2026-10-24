@@ -140,6 +140,22 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
   const pdfFormatName = isA4 ? "A4 לרוחב" : "A3 לרוחב";
   const pdfFileName = `לוח גאנט שנתי מלא (${pdfFormatName}) תשפ״ז – חטיבת הביניים ב׳ אבו סנאן.pdf`;
 
+  // Keep activePreviewIndex clamped
+  useEffect(() => {
+    if (selectedMonthsList.length > 0 && activePreviewIndex >= selectedMonthsList.length) {
+      setActivePreviewIndex(Math.max(0, selectedMonthsList.length - 1));
+    }
+  }, [selectedMonthsList.length, activePreviewIndex]);
+
+  const handleTabClick = (idx: number, year: number, monthIndex: number) => {
+    setActivePreviewIndex(idx);
+    const elementId = `full-year-month-page-${year}-${monthIndex}`;
+    const el = document.getElementById(elementId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   // Multi-page PDF generation for all selected months
   const handleGenerateFullPdf = async () => {
     if (totalSelected === 0) {
@@ -172,14 +188,12 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
 
       for (let i = 0; i < totalSelected; i++) {
         const monthItem = selectedMonthsList[i];
+        setActivePreviewIndex(i);
         setCurrentProgress({
           current: i + 1,
           total: totalSelected,
           monthName: monthItem.label,
         });
-
-        // Small wait to allow React state / UI update
-        await new Promise((resolve) => setTimeout(resolve, 80));
 
         const elementId = `full-year-month-page-${monthItem.year}-${monthItem.monthIndex}`;
         const pageElem = document.getElementById(elementId);
@@ -189,6 +203,10 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
           continue;
         }
 
+        // Scroll the element into view so it is fully rendered in layout
+        pageElem.scrollIntoView({ behavior: "auto", block: "nearest" });
+        await new Promise((resolve) => setTimeout(resolve, 80));
+
         // Render page with html2canvas-pro at 2x scale
         const canvas = await html2canvas(pageElem, {
           scale: 2,
@@ -196,7 +214,12 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
           logging: false,
           backgroundColor: "#ffffff",
           allowTaint: true,
+          windowWidth: pageElem.scrollWidth || 1100,
         });
+
+        if (!canvas || !canvas.width || !canvas.height || canvas.width <= 0 || canvas.height <= 0) {
+          throw new Error(`שגיאה בלכידת עמוד ${monthItem.label} (ממדי דף לא תקינים)`);
+        }
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
@@ -210,7 +233,27 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
         const offsetX = marginMm + (availWidth - renderWidth) / 2;
         const offsetY = marginMm + (availHeight - renderHeight) / 2;
 
-        pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
+        if (
+          !Number.isFinite(offsetX) ||
+          !Number.isFinite(offsetY) ||
+          !Number.isFinite(renderWidth) ||
+          !Number.isFinite(renderHeight) ||
+          renderWidth <= 0 ||
+          renderHeight <= 0
+        ) {
+          throw new Error(`חישוב קואורדינטות שגוי עבור עמוד ${monthItem.label}`);
+        }
+
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          Number(offsetX.toFixed(2)),
+          Number(offsetY.toFixed(2)),
+          Number(renderWidth.toFixed(2)),
+          Number(renderHeight.toFixed(2)),
+          undefined,
+          "FAST"
+        );
       }
 
       const blob = pdf.output("blob");
@@ -510,13 +553,13 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
         <div className="px-6 pt-3 flex items-center justify-between text-xs text-slate-500 no-print">
           <div className="flex items-center gap-1.5 font-bold text-slate-700">
             <Eye className="w-4 h-4 text-sky-600" />
-            תצוגה מקדימה של עמודי הקובץ:
+            תצוגה מקדימה וניווט מהיר:
           </div>
           <div className="flex items-center gap-1 overflow-x-auto pb-1 max-w-[70%]">
             {selectedMonthsList.map((m, idx) => (
               <button
                 key={`preview-tab-${m.year}-${m.monthIndex}`}
-                onClick={() => setActivePreviewIndex(idx)}
+                onClick={() => handleTabClick(idx, m.year, m.monthIndex)}
                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activePreviewIndex === idx
                     ? "bg-sky-600 text-white shadow-2xs"
@@ -530,7 +573,7 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
         </div>
 
         {/* Scrollable Container containing all months */}
-        {/* On screen, the active month is prominently shown for preview; all months exist in DOM for html2canvas & print */}
+        {/* All selected months are rendered visibly in DOM for high-precision html2canvas capture & print */}
         <div className="p-6 overflow-y-auto bg-slate-100/60 flex flex-col items-center gap-8 print:p-0 print:bg-white print:overflow-visible">
           {selectedMonthsList.map((monthItem, pageIdx) => {
             const isPreviewActive = pageIdx === activePreviewIndex;
@@ -552,23 +595,41 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
 
             return (
               <div
-                key={`month-page-${monthItem.year}-${monthItem.monthIndex}`}
-                id={`full-year-month-page-${monthItem.year}-${monthItem.monthIndex}`}
-                dir="rtl"
-                className={`full-year-print-page w-full bg-white rounded-xl shadow-lg border border-slate-300 p-4 sm:p-5 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none ${
-                  isPreviewActive ? "block" : "hidden print:block"
-                }`}
-                style={{
-                  maxWidth: isA4 ? "980px" : "1200px",
-                  width: "100%",
-                  backgroundColor: "#ffffff",
-                  color: "#0f172a",
-                  direction: "rtl",
-                  textAlign: "right",
-                  boxSizing: "border-box",
-                  fontFamily: "'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                }}
+                key={`month-container-${monthItem.year}-${monthItem.monthIndex}`}
+                className="w-full flex flex-col items-center gap-2"
+                style={{ maxWidth: isA4 ? "980px" : "1200px" }}
               >
+                <div className="w-full flex items-center justify-between text-xs text-slate-600 px-1 no-print">
+                  <span className="font-bold flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-sky-600 text-white flex items-center justify-center text-[10px] font-extrabold shadow-2xs">
+                      {pageIdx + 1}
+                    </span>
+                    <span>עמוד {pageIdx + 1} מתוך {totalSelected}: {monthItem.label}</span>
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {monthItem.weeks.length} שבועות • {pdfFormatName}
+                  </span>
+                </div>
+
+                <div
+                  id={`full-year-month-page-${monthItem.year}-${monthItem.monthIndex}`}
+                  dir="rtl"
+                  className={`full-year-print-page w-full bg-white rounded-xl shadow-lg border p-4 sm:p-5 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none transition-all duration-200 ${
+                    isPreviewActive
+                      ? "border-sky-500 ring-4 ring-sky-100 shadow-xl"
+                      : "border-slate-300 hover:border-slate-400"
+                  }`}
+                  style={{
+                    maxWidth: isA4 ? "980px" : "1200px",
+                    width: "100%",
+                    backgroundColor: "#ffffff",
+                    color: "#0f172a",
+                    direction: "rtl",
+                    textAlign: "right",
+                    boxSizing: "border-box",
+                    fontFamily: "'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                  }}
+                >
                 {/* Header for print/PDF */}
                 <div
                   className="pb-2 mb-2.5 flex items-center justify-between"
@@ -820,8 +881,9 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
                   </span>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
         </div>
       </div>
     </div>
