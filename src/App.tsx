@@ -524,12 +524,14 @@ export default function App() {
       />
 
       {/* Full Year All Months Print & PDF Export Modal (For Print Shops) */}
-      <FullYearExportModal
-        isOpen={isFullYearExportModalOpen}
-        onClose={() => setIsFullYearExportModalOpen(false)}
-        currentDate={currentDate}
-        events={events}
-      />
+      {isFullYearExportModalOpen && (
+        <FullYearExportModal
+          isOpen={isFullYearExportModalOpen}
+          onClose={() => setIsFullYearExportModalOpen(false)}
+          currentDate={currentDate}
+          events={events}
+        />
+      )}
 
       {/* Search Events Modal */}
       <SearchEventsModal

@@ -102,6 +102,13 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
     allMonths.map((_, idx) => idx)
   );
 
+  // Selected months list
+  const selectedMonthsList = useMemo(
+    () => allMonths.filter((_, idx) => selectedMonthsIndices.includes(idx)),
+    [allMonths, selectedMonthsIndices]
+  );
+  const totalSelected = selectedMonthsList.length;
+
   // Keep selection valid if months list updates
   useEffect(() => {
     setSelectedMonthsIndices(allMonths.map((_, idx) => idx));
@@ -116,6 +123,14 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
     };
   }, [pdfBlobUrl]);
 
+  // Keep activePreviewIndex clamped
+  useEffect(() => {
+    if (selectedMonthsList.length > 0 && activePreviewIndex >= selectedMonthsList.length) {
+      setActivePreviewIndex(Math.max(0, selectedMonthsList.length - 1));
+    }
+  }, [selectedMonthsList.length, activePreviewIndex]);
+
+  // DO NOT place hooks below this line
   if (!isOpen) return null;
 
   const toggleSelectMonth = (index: number) => {
@@ -133,19 +148,9 @@ export const FullYearExportModal: React.FC<FullYearExportModalProps> = ({
     setSelectedMonthsIndices([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   };
 
-  const selectedMonthsList = allMonths.filter((_, idx) => selectedMonthsIndices.includes(idx));
-  const totalSelected = selectedMonthsList.length;
-
   const isA4 = pageSize === "a4";
   const pdfFormatName = isA4 ? "A4 לרוחב" : "A3 לרוחב";
   const pdfFileName = `לוח גאנט שנתי מלא (${pdfFormatName}) תשפ״ז – חטיבת הביניים ב׳ אבו סנאן.pdf`;
-
-  // Keep activePreviewIndex clamped
-  useEffect(() => {
-    if (selectedMonthsList.length > 0 && activePreviewIndex >= selectedMonthsList.length) {
-      setActivePreviewIndex(Math.max(0, selectedMonthsList.length - 1));
-    }
-  }, [selectedMonthsList.length, activePreviewIndex]);
 
   const handleTabClick = (idx: number, year: number, monthIndex: number) => {
     setActivePreviewIndex(idx);
