@@ -120,6 +120,34 @@ export const A3ExportModal: React.FC<A3ExportModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-200 print:p-0 print:bg-white print:static">
+      {/* Scoped print styling for A3 */}
+      <style>{`
+        @page {
+          size: A3 landscape;
+          margin: 6mm;
+        }
+        @media print {
+          html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          #a3-printable-document {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            border: none !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}</style>
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh] print:max-h-none print:shadow-none print:border-0 print:rounded-none print:w-full">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 no-print">

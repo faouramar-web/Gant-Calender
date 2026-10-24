@@ -8,6 +8,7 @@ import { PasswordModal } from "./components/PasswordModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { A3ExportModal } from "./components/A3ExportModal";
 import { A4ExportModal } from "./components/A4ExportModal";
+import { FullYearExportModal } from "./components/FullYearExportModal";
 import { SearchEventsModal } from "./components/SearchEventsModal";
 import { YearlyOverviewModal } from "./components/YearlyOverviewModal";
 import { EmailAlertsModal } from "./components/EmailAlertsModal";
@@ -47,6 +48,7 @@ export default function App() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isA4ExportModalOpen, setIsA4ExportModalOpen] = useState(false);
   const [isA3ExportModalOpen, setIsA3ExportModalOpen] = useState(false);
+  const [isFullYearExportModalOpen, setIsFullYearExportModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isYearlyViewModalOpen, setIsYearlyViewModalOpen] = useState(false);
   const [isEmailAlertsModalOpen, setIsEmailAlertsModalOpen] = useState(false);
@@ -319,6 +321,7 @@ export default function App() {
         }}
         onOpenA4ExportModal={() => setIsA4ExportModalOpen(true)}
         onOpenA3ExportModal={() => setIsA3ExportModalOpen(true)}
+        onOpenFullYearExportModal={() => setIsFullYearExportModalOpen(true)}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onOpenYearlyViewModal={() => setIsYearlyViewModalOpen(true)}
         onOpenEmailAlertsModal={() => {
@@ -333,8 +336,8 @@ export default function App() {
         onImportBackup={handleImportBackup}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main Content Area - hidden during modal print */}
+      <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 ${isA4ExportModalOpen || isA3ExportModalOpen || isFullYearExportModalOpen ? "no-print" : ""}`}>
         {/* Toast alert message */}
         {toastMessage && (
           <div
@@ -517,6 +520,14 @@ export default function App() {
         onClose={() => setIsA3ExportModalOpen(false)}
         currentDate={currentDate}
         weeks={weeks}
+        events={events}
+      />
+
+      {/* Full Year All Months Print & PDF Export Modal (For Print Shops) */}
+      <FullYearExportModal
+        isOpen={isFullYearExportModalOpen}
+        onClose={() => setIsFullYearExportModalOpen(false)}
+        currentDate={currentDate}
         events={events}
       />
 

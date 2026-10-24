@@ -75,12 +75,15 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
       const pdfWidth = isLandscape ? 297 : 210;
       const pdfHeight = isLandscape ? 210 : 297;
 
-      // Fit proportionally without stretching or distortion
-      const scaleFactor = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+      // Fit proportionally with safe margins on a single page (no stretching, distortion or extra page)
+      const marginMm = 6;
+      const availWidth = pdfWidth - marginMm * 2;
+      const availHeight = pdfHeight - marginMm * 2;
+      const scaleFactor = Math.min(availWidth / canvas.width, availHeight / canvas.height);
       const renderWidth = canvas.width * scaleFactor;
       const renderHeight = canvas.height * scaleFactor;
-      const offsetX = (pdfWidth - renderWidth) / 2;
-      const offsetY = (pdfHeight - renderHeight) / 2;
+      const offsetX = marginMm + (availWidth - renderWidth) / 2;
+      const offsetY = marginMm + (availHeight - renderHeight) / 2;
 
       pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight, undefined, "FAST");
 
@@ -120,9 +123,44 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
   };
 
   const isLandscape = orientation === "landscape";
+  const isSixWeeks = weeks.length >= 6;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-200 print:p-0 print:bg-white print:static">
+      {/* Dynamic print style scoped strictly for A4 single page fitting */}
+      <style>{`
+        @page {
+          size: ${isLandscape ? "A4 landscape" : "A4 portrait"};
+          margin: 4mm;
+        }
+        @media print {
+          html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          #a4-printable-document {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            padding: ${isLandscape ? "3mm 4mm" : "5mm 5mm"} !important;
+            box-shadow: none !important;
+            border: none !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+            page-break-before: avoid !important;
+            break-before: avoid !important;
+          }
+        }
+      `}</style>
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-5xl overflow-hidden flex flex-col max-h-[95vh] print:max-h-none print:shadow-none print:border-0 print:rounded-none print:w-full">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 no-print">
@@ -131,9 +169,14 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900">
-                הדפסה ושמירה A4 (מדפסת רגילה)
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-extrabold text-slate-900">
+                  הדפסה ושמירה A4 (מדפסת רגילה)
+                </h3>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                  ✓ מותאם לדף A4 יחיד בדיוק
+                </span>
+              </div>
               <p className="text-xs text-slate-500 font-medium">
                 {monthName} {year} • חטיבת הביניים ב׳ אבו סנאן
               </p>
@@ -269,13 +312,13 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
             </span>
           </div>
 
-          {/* Printable Layout Target Container for HTML2Canvas */}
+          {/* Printable Layout Target Container for HTML2Canvas & Native Print */}
           <div
             id="a4-printable-document"
             dir="rtl"
-            className="w-full bg-white rounded-xl shadow-lg border border-slate-300 p-6 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none"
+            className="w-full bg-white rounded-xl shadow-lg border border-slate-300 p-4 sm:p-5 text-slate-900 print:shadow-none print:border-none print:p-0 print:rounded-none"
             style={{
-              maxWidth: isLandscape ? "880px" : "620px",
+              maxWidth: isLandscape ? "960px" : "620px",
               width: "100%",
               backgroundColor: "#ffffff",
               color: "#0f172a",
@@ -287,32 +330,32 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
           >
             {/* Header for print/PDF */}
             <div
-              className="pb-3 mb-4 flex items-center justify-between"
+              className="pb-2 mb-2.5 flex items-center justify-between"
               style={{ borderBottom: "2px solid #0f172a" }}
             >
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-normal" style={{ color: "#0f172a" }}>
+                <h1 className="text-lg sm:text-xl font-bold tracking-normal" style={{ color: "#0f172a" }}>
                   לוח גאנט – חטיבת הביניים ב׳ אבו סנאן
                 </h1>
-                <div className="flex items-center gap-2.5 mt-0.5">
+                <div className="flex items-center gap-2 mt-0.5">
                   <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded"
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded"
                     style={{ backgroundColor: "#f1f5f9", color: "#334155" }}
                   >
                     סמל מוסד: 640615
                   </span>
-                  <span className="text-[11px] font-medium" style={{ color: "#64748b" }}>
+                  <span className="text-[10px] font-medium" style={{ color: "#64748b" }}>
                     שנת הלימודים תשפ״ז
                   </span>
                 </div>
               </div>
 
               <div className="text-left">
-                <div className="text-2xl font-bold" style={{ color: "#1e40af" }}>
+                <div className="text-xl sm:text-2xl font-bold" style={{ color: "#1e40af" }}>
                   {monthName} {year}
                 </div>
-                <div className="text-[11px] font-medium mt-0.5" style={{ color: "#64748b" }}>
-                  פורמט A4 ({orientationLabel})
+                <div className="text-[10px] font-medium mt-0.5" style={{ color: "#64748b" }}>
+                  פורמט A4 ({orientationLabel}) • דף יחיד
                 </div>
               </div>
             </div>
@@ -348,10 +391,10 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                         flex: "0 0 14.2857%",
                         backgroundColor: isOffDay ? "#4f46e5" : "#2563eb",
                         color: "#ffffff",
-                        padding: isLandscape ? "7px 0" : "5px 0",
+                        padding: isLandscape ? (isSixWeeks ? "5px 0" : "6px 0") : "6px 0",
                         textAlign: "center",
                         fontWeight: 700,
-                        fontSize: "12px",
+                        fontSize: isLandscape ? (isSixWeeks ? "11.5px" : "12.5px") : "12.5px",
                         boxSizing: "border-box",
                         borderLeft: i < 6 ? "1px solid rgba(255,255,255,0.25)" : "none",
                       }}
@@ -365,9 +408,20 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
               {/* Weeks */}
               <div style={{ backgroundColor: "#ffffff", width: "100%" }}>
                 {weeks.map((week, weekIdx) => {
-                  const baseH = isLandscape ? 40 : 48;
-                  const slotH = isLandscape ? 24 : 26;
-                  const minH = Math.max(isLandscape ? 72 : 82, baseH + week.maxSlots * slotH);
+                  const numWeeks = weeks.length;
+                  // Dynamic baseline height so calendar fills the page height nicely without leaving dead blank space at the bottom
+                  const defaultWeekMinH = isLandscape
+                    ? (numWeeks <= 4 ? 138 : numWeeks === 5 ? 112 : 92)
+                    : (numWeeks <= 4 ? 175 : numWeeks === 5 ? 148 : 124);
+
+                  const baseH = isLandscape ? (isSixWeeks ? 28 : 34) : 46;
+                  const slotH = isLandscape ? (isSixWeeks ? 19 : 21) : 25;
+                  const minH = Math.max(defaultWeekMinH, baseH + week.maxSlots * slotH);
+                  const ribbonH = isLandscape ? (isSixWeeks ? "18px" : "21px") : "23px";
+                  const ribbonFontSize = isLandscape ? (isSixWeeks ? "10px" : "11.5px") : "12px";
+                  const ribbonPaddingTop = isLandscape ? (isSixWeeks ? "24px" : "28px") : "30px";
+                  const dayNumberFontSize = isLandscape ? (isSixWeeks ? "11px" : "12px") : "12px";
+
                   return (
                     <div
                       key={`a4-week-${weekIdx}`}
@@ -402,7 +456,7 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                               flex: "0 0 14.2857%",
                               boxSizing: "border-box",
                               height: "100%",
-                              padding: "4px",
+                              padding: isLandscape ? "3px 5px" : "5px",
                               display: "flex",
                               flexDirection: "column",
                               justifyContent: "space-between",
@@ -417,9 +471,9 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "flex-start", width: "100%" }}>
                               <span
                                 style={{
-                                  fontSize: "11px",
+                                  fontSize: dayNumberFontSize,
                                   fontWeight: day.isCurrentMonth ? 800 : 500,
-                                  padding: "1px 5px",
+                                  padding: "2px 6px",
                                   borderRadius: "9999px",
                                   backgroundColor: day.isToday ? "#1d4ed8" : "transparent",
                                   color: day.isToday
@@ -441,8 +495,8 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                       <div
                         style={{
                           position: "relative",
-                          paddingTop: "26px",
-                          paddingBottom: "4px",
+                          paddingTop: ribbonPaddingTop,
+                          paddingBottom: "3px",
                           paddingLeft: "2px",
                           paddingRight: "2px",
                           zIndex: 2,
@@ -459,8 +513,8 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                               key={`a4-slot-${sIdx}`}
                               style={{
                                 position: "relative",
-                                height: "22px",
-                                marginBottom: "3px",
+                                height: ribbonH,
+                                marginBottom: isLandscape ? "2.5px" : "3px",
                                 width: "100%",
                                 boxSizing: "border-box",
                               }}
@@ -484,18 +538,18 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
                                       bottom: 0,
                                       backgroundColor: seg.event.color,
                                       color: seg.event.textColor || "#ffffff",
-                                      padding: "0 6px",
+                                      padding: "0 5px",
                                       display: "flex",
                                       alignItems: "center",
                                       justifyContent: "flex-start",
-                                      fontSize: "11px",
+                                      fontSize: ribbonFontSize,
                                       fontWeight: 700,
                                       overflow: "hidden",
                                       boxSizing: "border-box",
-                                      borderTopRightRadius: isSingle || isStart ? "4px" : "0px",
-                                      borderBottomRightRadius: isSingle || isStart ? "4px" : "0px",
-                                      borderTopLeftRadius: isSingle || isEnd ? "4px" : "0px",
-                                      borderBottomLeftRadius: isSingle || isEnd ? "4px" : "0px",
+                                      borderTopRightRadius: isSingle || isStart ? "3px" : "0px",
+                                      borderBottomRightRadius: isSingle || isStart ? "3px" : "0px",
+                                      borderTopLeftRadius: isSingle || isEnd ? "3px" : "0px",
+                                      borderBottomLeftRadius: isSingle || isEnd ? "3px" : "0px",
                                       boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
                                     }}
                                   >
@@ -525,7 +579,7 @@ export const A4ExportModal: React.FC<A4ExportModalProps> = ({
 
             {/* Print Footer */}
             <div
-              className="mt-3 pt-2.5 flex items-center justify-between text-[11px] font-medium"
+              className="mt-2 pt-1.5 flex items-center justify-between text-[10px] font-medium"
               style={{ borderTop: "1px solid #cbd5e1", color: "#64748b" }}
             >
               <span>חטיבת הביניים ב׳ אבו סנאן • משרד החינוך</span>

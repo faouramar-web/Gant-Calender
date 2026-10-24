@@ -6,17 +6,14 @@
   }
 }
 
-@page {
-  size: A3 landscape;
-  margin: 8mm;
-}
-
 @media print {
   html, body {
     background-color: #ffffff !important;
     color: #000000 !important;
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .no-print {
@@ -38,12 +35,15 @@
   #a4-printable-document {
     width: 100% !important;
     min-width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 }
 

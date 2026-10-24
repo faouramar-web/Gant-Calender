@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search, Cloud, CalendarDays, Mail } from "lucide-react";
+import { GraduationCap, Lock, Unlock, Plus, Printer, Eye, CheckCircle2, School, Download, Upload, Search, Cloud, CalendarDays, Mail, Layers } from "lucide-react";
 
 interface HeaderProps {
   isEditMode: boolean;
@@ -8,6 +8,7 @@ interface HeaderProps {
   onOpenAddEventModal: () => void;
   onOpenA4ExportModal: () => void;
   onOpenA3ExportModal: () => void;
+  onOpenFullYearExportModal?: () => void;
   onOpenSearchModal: () => void;
   onOpenYearlyViewModal?: () => void;
   onOpenEmailAlertsModal?: () => void;
@@ -22,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddEventModal,
   onOpenA4ExportModal,
   onOpenA3ExportModal,
+  onOpenFullYearExportModal,
   onOpenSearchModal,
   onOpenYearlyViewModal,
   onOpenEmailAlertsModal,
@@ -169,6 +171,18 @@ export const Header: React.FC<HeaderProps> = ({
               <Printer className="w-4 h-4 text-blue-600" />
               <span>שמירה והדפסה A3</span>
             </button>
+
+            {/* Full Year PDF Export Button (All Months for Print Shop) */}
+            {onOpenFullYearExportModal && (
+              <button
+                onClick={onOpenFullYearExportModal}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-gradient-to-r from-sky-50 to-indigo-50 hover:from-sky-100 hover:to-indigo-100 text-indigo-950 border border-indigo-400 text-xs sm:text-sm font-extrabold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                title="שמירת כל לוח הגאנט (כל חודשי השנה) בקובץ PDF יחיד לשליחה למכון הדפסה"
+              >
+                <Layers className="w-4 h-4 text-indigo-600" />
+                <span>הדפסת כל הלוח (שנתי)</span>
+              </button>
+            )}
 
             {/* Add event button (only when edit mode is active) */}
             {isEditMode && (
